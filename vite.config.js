@@ -2,7 +2,11 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
+// GitHub Pages では VITE_BASE=/-/ を CI 側で設定する
+const base = process.env.VITE_BASE ?? "/";
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -17,8 +21,8 @@ export default defineConfig({
         background_color: "#0f172a",
         display: "standalone",
         orientation: "portrait-primary",
-        start_url: "/",
-        scope: "/",
+        start_url: base,
+        scope: base,
         lang: "ja",
         icons: [
           {
