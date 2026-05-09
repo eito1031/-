@@ -1107,6 +1107,85 @@ export default function App() {
   // Bug 4 fixed: was {…office,...}
   const officeNode = useMemo(()=>({ ...office, id:"office", type:"office", stay:0 }),[office]);
 
+  // TSPTW-DP: 時刻指定あり・≤9件の完全最適化
+  const tsptw_dp = useCallback((custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime)=>{
+    const n=custs.length;
+    const nodeIdx=new Map(tableNodes.map((nd,i)=>[nd.id,i]));
+    const getT=(a,b)=>{const ai=nodeIdx.get(a.id)??-1,bi=nodeIdx.get(b.id)??-1;return(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(a,b);};
+    const applyArr=(c,arr)=>{
+      if(pinnedTimes[c.id])arr=Math.max(arr,t2m(pinnedTimes[c.id]));
+      const end=arr+c.stay;
+      if((arr>=VISIT_S&&arr<VISIT_E)||(arr<VISIT_S&&end>VISIT_S))arr=VISIT_E;
+      return arr;
+    };
+    const INF=1e9,depart=t2m(departTime);
+    const dp=Array.from({length:1<<n},()=>new Float64Array(n).fill(INF));
+    const prev=Array.from({length:1<<n},()=>new Int8Array(n).fill(-1));
+    const priorIdx=priorityId&&!pinnedTimes[priorityId]?custs.findIndex(c=>c.id===priorityId):-1;
+    const initVisit=(i)=>{const c=custs[i];dp[1<<i][i]=applyArr(c,depart+getT(officeNode,c))+c.stay;};
+    if(priorIdx>=0)initVisit(priorIdx);else for(let i=0;i<n;i++)initVisit(i);
+    for(let mask=1;mask<(1<<n);mask++){
+      for(let i=0;i<n;i++){
+        if(!(mask&(1<<i))||dp[mask][i]>=INF)continue;
+        if(priorIdx>=0&&!(mask&(1<<priorIdx)))continue;
+        for(let j=0;j<n;j++){
+          if(mask&(1<<j))continue;
+          const c=custs[j];
+          const arr=applyArr(c,dp[mask][i]+getT(custs[i],c));
+          const dep=arr+c.stay,nm=mask|(1<<j);
+          if(dep<dp[nm][j]){dp[nm][j]=dep;prev[nm][j]=i;}
+        }
+      }
+    }
+    const full=(1<<n)-1;
+    let best=INF,lastJ=0;
+    for(let j=0;j<n;j++){const ret=dp[full][j]+getT(custs[j],officeNode);if(ret<best){best=ret;lastJ=j;}}
+    const order=[];let mask=full,cur=lastJ;
+    while(mask>0){order.push(custs[cur]);const p=prev[mask][cur];mask^=(1<<cur);cur=p;}
+    order.reverse();return order;
+  },[]);
+
+  // 2フェーズ法: 時刻指定あり・≥10件（貪欲割り当て＋窓内2-opt）
+  const two_phase_route = useCallback((custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime)=>{
+    const nodeIdx=new Map(tableNodes.map((nd,i)=>[nd.id,i]));
+    const getT=(a,b)=>{const ai=nodeIdx.get(a.id)??-1,bi=nodeIdx.get(b.id)??-1;return(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(a,b);};
+    const pinned=custs.filter(c=>pinnedTimes[c.id]).sort((a,b)=>t2m(pinnedTimes[a.id])-t2m(pinnedTimes[b.id]));
+    let flexible=custs.filter(c=>!pinnedTimes[c.id]);
+    if(priorityId&&!pinnedTimes[priorityId]){const pi=flexible.findIndex(c=>c.id===priorityId);if(pi>0)flexible=[flexible[pi],...flexible.filter((_,i)=>i!==pi)];}
+    const EOD=t2m("20:00");
+    const milestones=[{node:officeNode,time:t2m(departTime)},...pinned.map(c=>({node:c,time:t2m(pinnedTimes[c.id])})),{node:{...officeNode,id:"office_return"},time:EOD}];
+    const windowSets=[];let remaining=[...flexible];
+    for(let wi=0;wi<milestones.length-1;wi++){
+      const ms=milestones[wi],me=milestones[wi+1];
+      let curPos=ms.node,curTime=ms.time+(wi>0?(ms.node.stay??DEFAULT_STAY):0);
+      const lunchReserve=(me.time>LUNCH_S&&curTime<LUNCH_E)?DEFAULT_LUNCH_STAY+10:0;
+      const wSet=[];
+      if(wi===0&&remaining.length>0&&remaining[0].id===priorityId){
+        const pc=remaining[0];
+        if(getT(curPos,pc)+pc.stay+getT(pc,me.node)+lunchReserve<=me.time-curTime){wSet.push(pc);curTime+=getT(curPos,pc)+pc.stay;curPos=pc;remaining=remaining.slice(1);}
+      }
+      let added=true;
+      while(added&&remaining.length>0){
+        added=false;
+        const budget=me.time-curTime-getT(curPos,me.node)-lunchReserve;
+        let bestIdx=-1,bestT=Infinity;
+        for(let k=0;k<remaining.length;k++){const c=remaining[k],tTo=getT(curPos,c),tAway=getT(c,me.node);if(tTo+c.stay+tAway<=budget&&tTo<bestT){bestT=tTo;bestIdx=k;}}
+        if(bestIdx>=0){const c=remaining[bestIdx];wSet.push(c);curTime+=getT(curPos,c)+c.stay;curPos=c;remaining=remaining.filter((_,i)=>i!==bestIdx);added=true;}
+      }
+      windowSets.push(wSet);
+    }
+    const route=[];
+    for(let wi=0;wi<windowSets.length;wi++){
+      const wCusts=windowSets[wi];
+      const opt=wCusts.length>1?optimize2opt(wCusts,wi===0?priorityId:null,durMat):wCusts;
+      route.push(...opt);
+      if(wi<pinned.length)route.push(pinned[wi]);
+    }
+    let curPos2=route.length>0?route[route.length-1]:officeNode;
+    while(remaining.length>0){let bi=0,bt=Infinity;for(let k=0;k<remaining.length;k++){const t=getT(curPos2,remaining[k]);if(t<bt){bt=t;bi=k;}}route.push(remaining[bi]);curPos2=remaining[bi];remaining=remaining.filter((_,i)=>i!==bi);}
+    return route;
+  },[]);
+
   const handleSearch = useCallback(async () => {
     setIsOptimizing(true);
     setUsedFallback(false);
@@ -1119,17 +1198,13 @@ export default function App() {
       const durMat = await fetchOsrmTable(tableNodes);
 
       // STEP2: ルート最適化（defer でブラウザフリーズ防止）
-      let optimized = await defer(()=>optimizeRoute(custs,priorityId,durMat));
-
-      // ピン済み顧客を時刻昇順に並べ直す
-      const activePinned = optimized.filter(c=>pinnedTimes[c.id]);
-      if(activePinned.length>0){
-        const sortedPinned=[...activePinned].sort((a,b)=>t2m(pinnedTimes[a.id])-t2m(pinnedTimes[b.id]));
-        const pinnedPositions=optimized.map((c,i)=>pinnedTimes[c.id]?i:-1).filter(i=>i>=0);
-        const reordered=[...optimized];
-        pinnedPositions.forEach((pos,i)=>{reordered[pos]=sortedPinned[i];});
-        optimized=reordered;
-      }
+      const hasPinned=custs.some(c=>pinnedTimes[c.id]);
+      let optimized = await defer(()=>{
+        if(!hasPinned) return optimizeRoute(custs,priorityId,durMat);
+        return custs.length<=9
+          ? tsptw_dp(custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime)
+          : two_phase_route(custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime);
+      });
 
       // STEP3: OSRM ポリライン並列取得
       const retNode = {...officeNode,id:"office_return",type:"office_return"};
