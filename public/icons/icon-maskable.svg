@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Maskable: safe zone is 80% = 40px padding each side on 512px canvas -->
+  <!-- Full background (no rounded corners for maskable) -->
+  <rect width="512" height="512" fill="#4338ca"/>
+  <!-- Route curve (scaled to fit in safe zone) -->
+  <path d="M 156 396 C 156 272 356 284 356 156"
+        stroke="white" stroke-width="40" stroke-linecap="round"
+        fill="none" opacity="0.92"/>
+  <!-- Start point -->
+  <circle cx="156" cy="396" r="42" fill="white"/>
+  <circle cx="156" cy="396" r="21" fill="#4338ca"/>
+  <!-- Mid waypoint -->
+  <circle cx="260" cy="264" r="27" fill="white" opacity="0.72"/>
+  <!-- End / destination -->
+  <circle cx="356" cy="156" r="42" fill="white"/>
+  <circle cx="356" cy="156" r="16" fill="#4338ca"/>
+</svg>

@@ -954,7 +954,93 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
 };
 
 // ═══════════════════════════════════════════════════════════════
-// SECTION 16: MAIN APP
+// SECTION 16: PWA INSTALL PROMPT
+// ═══════════════════════════════════════════════════════════════
+
+const InstallPrompt = () => {
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [show, setShow] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [iosOpen, setIosOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(display-mode: standalone)").matches) return;
+    if (localStorage.getItem("pwa-dismissed")) return;
+
+    const ios = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+    if (ios) { setIsIOS(true); setShow(true); return; }
+
+    const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); setShow(true); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const dismiss = () => { setShow(false); localStorage.setItem("pwa-dismissed", "1"); };
+
+  const install = async () => {
+    if (isIOS) { setIosOpen(true); return; }
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    if (outcome === "accepted") setShow(false);
+  };
+
+  if (!show) return null;
+
+  return (
+    <>
+      <div className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-safe-area-inset-bottom" style={{paddingBottom:"max(12px,env(safe-area-inset-bottom))"}}>
+        <div className="max-w-xl mx-auto bg-slate-900/95 backdrop-blur-md border border-indigo-500/40 rounded-2xl shadow-2xl shadow-indigo-900/40 px-4 py-3 mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+              <Navigation size={22} className="text-white"/>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white leading-tight">ルート最適化ツール</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">ホーム画面に追加するとオフラインでも使用可</p>
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button onClick={dismiss} className="px-2.5 py-1.5 rounded-lg text-xs text-slate-500 hover:text-slate-300 transition-colors">後で</button>
+              <button onClick={install} className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors active:scale-95">
+                {isIOS ? "追加方法" : "追加"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {iosOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end justify-center p-4" onClick={()=>setIosOpen(false)}>
+          <div className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl p-6" onClick={e=>e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center"><Navigation size={18} className="text-white"/></div>
+                <span className="font-bold text-sm text-white">ホーム画面に追加</span>
+              </div>
+              <button onClick={()=>setIosOpen(false)} className="text-slate-500 hover:text-white"><X size={18}/></button>
+            </div>
+            <ol className="space-y-3">
+              {[
+                { n:1, text:"Safari下部の「共有」ボタン（□↑）をタップ" },
+                { n:2, text:"メニューを下にスクロールし「ホーム画面に追加」をタップ" },
+                { n:3, text:"右上の「追加」をタップして完了" },
+              ].map(s=>(
+                <li key={s.n} className="flex items-start gap-3">
+                  <span className="w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{s.n}</span>
+                  <span className="text-sm text-slate-300 leading-relaxed">{s.text}</span>
+                </li>
+              ))}
+            </ol>
+            <button onClick={()=>{setIosOpen(false);dismiss();}} className="w-full mt-5 py-2.5 rounded-xl border border-slate-600 text-slate-400 text-sm font-semibold hover:text-white transition-colors">閉じる</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 17: MAIN APP
 // ═══════════════════════════════════════════════════════════════
 
 export default function App() {
@@ -1111,6 +1197,7 @@ export default function App() {
       </div>
       {showOfficeSetting&&<OfficeSettingsModal office={office} onSave={o=>{setOffice(o);setShowOfficeSetting(false);showToast("オフィス設定を保存しました");}} onClose={()=>setShowOfficeSetting(false)}/>}
       {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
+      <InstallPrompt/>
     </div>
   );
 }

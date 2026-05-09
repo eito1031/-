@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#4338ca"/>
+  <!-- Route curve -->
+  <path d="M 128 384 C 128 240 384 272 384 128"
+        stroke="white" stroke-width="44" stroke-linecap="round"
+        fill="none" opacity="0.92"/>
+  <!-- Start point -->
+  <circle cx="128" cy="384" r="48" fill="white"/>
+  <circle cx="128" cy="384" r="24" fill="#4338ca"/>
+  <!-- Mid waypoint -->
+  <circle cx="260" cy="252" r="30" fill="white" opacity="0.72"/>
+  <!-- End / destination -->
+  <circle cx="384" cy="128" r="48" fill="white"/>
+  <circle cx="384" cy="128" r="18" fill="#4338ca"/>
+</svg>
