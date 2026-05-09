@@ -45,6 +45,7 @@ const VISIT_E = t2m("13:00");
 const LUNCH_S = t2m("11:45");
 const LUNCH_E = t2m("14:00");
 const OSRM_BASE = "https://router.project-osrm.org";
+const TRAFFIC_BUFFER = 1.5;
 
 const DEPART_OPTIONS = (() => {
   const o=[]; for(let m=t2m("09:00");m<=t2m("16:00");m+=15) o.push(m2t(m)); return o;
@@ -126,7 +127,10 @@ const fetchOsrmTable = async (nodes) => {
     const d = await r.json();
     if (d.code !== "Ok" || !d.durations) throw 0;
     const mat = d.durations.map((row,i) =>
-      row.map((s,j) => s==null ? fallbackMins(nodes[i],nodes[j]) : Math.max(1,Math.round(s/60)))
+      row.map((s,j) => s==null
+        ? fallbackMins(nodes[i],nodes[j])
+        : Math.max(1, Math.round((s / 60) * TRAFFIC_BUFFER))
+      )
     );
     // Bug 1 fixed: was saveCache(*cache)
     _cache[key] = mat; saveCache(_cache);
