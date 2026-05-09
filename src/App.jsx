@@ -309,6 +309,7 @@ const calcSchedule = (locations, departTime) => {
     let arr=i===0?cursor:cursor+travelMins;
 
     if(loc.type==="customer"){
+      if(loc.pinnedTime) arr=Math.max(arr,t2m(loc.pinnedTime));
       const end=arr+loc.stay;
       if((arr>=VISIT_S&&arr<VISIT_E)||(arr<VISIT_S&&end>VISIT_S)) arr=VISIT_E;
     }
@@ -775,8 +776,9 @@ const DatabaseView = ({ customers, onUpdate, onToast }) => {
 // SECTION 13: LOCATION SELECTOR (STEP 1)
 // ═══════════════════════════════════════════════════════════════
 
-const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPriority, departTime, onDepartChange, onSearch, isOptimizing }) => {
+const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPriority, pinnedTimes, onSetPinnedTime, departTime, onDepartChange, onSearch, isOptimizing }) => {
   const [q,setQ]=useState("");
+  const [editingTimeId,setEditingTimeId]=useState(null);
   const filtered=useMemo(()=>customers.filter(c=>matchQuery(c,q)),[customers,q]);
   const noCoordSelected=selected.filter(id=>{ const c=customers.find(x=>x.id===id); return c&&(c.lat==null||c.lng==null); });
   const canSearch=selected.length>0&&noCoordSelected.length===0&&!isOptimizing;
@@ -812,6 +814,7 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
         {filtered.length===0&&<div className="text-center py-8 text-slate-600 text-sm">該当なし</div>}
         {filtered.map(loc=>{
           const isSel=selected.includes(loc.id), isPri=priorityId===loc.id, noC=loc.lat==null||loc.lng==null;
+          const pinTime=pinnedTimes[loc.id]??null;
           return (
             <div key={loc.id} className={`flex items-center gap-2 rounded-xl border px-3 py-3 transition-all ${noC?"border-amber-700/40 bg-amber-950/10 opacity-75":isPri?"border-emerald-500/60 bg-emerald-950/25":isSel?"border-indigo-500/50 bg-indigo-900/20":"border-slate-700/50 bg-slate-800/40"}`}>
               <button onClick={()=>!noC&&onToggle(loc.id)} className={`flex-shrink-0 ${noC?"text-slate-700 cursor-not-allowed":isSel||isPri?"text-indigo-400":"text-slate-600 hover:text-slate-400"}`}>
@@ -819,11 +822,25 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
               </button>
               <div className="flex-1 min-w-0 cursor-pointer" onClick={()=>!noC&&onToggle(loc.id)}>
                 <div className={`text-sm font-semibold ${isPri?"text-emerald-100":"text-slate-100"}`}>{loc.name}</div>
-                <div className="text-xs mt-0.5 flex items-center gap-1.5">
-                  {noC?<span className="text-amber-500 flex items-center gap-0.5"><AlertTriangle size={9}/>座標未取得</span>:<>{loc.area&&<span className="text-slate-500">{loc.area}</span>}{loc.address&&<span className="text-slate-600 truncate max-w-[140px]">{loc.address}</span>}{isPri&&<span className="text-emerald-400 font-semibold flex items-center gap-0.5"><Zap size={9}/>最優先</span>}</>}
+                <div className="text-xs mt-0.5 flex items-center gap-1.5 flex-wrap">
+                  {noC?<span className="text-amber-500 flex items-center gap-0.5"><AlertTriangle size={9}/>座標未取得</span>:<>{loc.area&&<span className="text-slate-500">{loc.area}</span>}{loc.address&&<span className="text-slate-600 truncate max-w-[140px]">{loc.address}</span>}{isPri&&<span className="text-emerald-400 font-semibold flex items-center gap-0.5"><Zap size={9}/>最優先</span>}{pinTime&&<span className="text-amber-400 font-semibold flex items-center gap-0.5"><Clock size={9}/>{pinTime}指定</span>}</>}
                 </div>
               </div>
-              {!noC&&<button onClick={()=>onSetPriority(loc.id)} className={`flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${isPri?"bg-emerald-500 text-white":"bg-slate-700 text-slate-400 hover:bg-emerald-600/70 hover:text-white"}`}><Zap size={11}/>優先</button>}
+              <div className="flex-shrink-0 flex items-center gap-1">
+                {!noC&&<button onClick={()=>onSetPriority(loc.id)} className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${isPri?"bg-emerald-500 text-white":"bg-slate-700 text-slate-400 hover:bg-emerald-600/70 hover:text-white"}`}><Zap size={11}/>優先</button>}
+                {!noC&&isSel&&(
+                  editingTimeId===loc.id
+                    ?<input type="time" autoFocus defaultValue={pinTime??""}
+                        className="w-24 bg-slate-800 border border-amber-500 rounded-lg px-1.5 py-1 text-xs text-white focus:outline-none"
+                        onChange={e=>onSetPinnedTime(loc.id,e.target.value||null)}
+                        onBlur={()=>setEditingTimeId(null)}/>
+                    :<button onClick={()=>setEditingTimeId(loc.id)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${pinTime?"bg-amber-500 text-white":"bg-slate-700 text-slate-400 hover:bg-amber-600/70 hover:text-white"}`}>
+                        <Clock size={11}/>{pinTime??"時刻"}
+                        {pinTime&&<span className="ml-0.5 opacity-70 hover:opacity-100" onClick={e=>{e.stopPropagation();onSetPinnedTime(loc.id,null);}}>×</span>}
+                      </button>
+                )}
+              </div>
             </div>
           );
         })}
@@ -1052,6 +1069,7 @@ export default function App() {
   const [step,setStep]         = useState("select");
   const [selectedIds,setSelectedIds] = useState([]);
   const [priorityId,setPriorityId]   = useState(null);
+  const [pinnedTimes,setPinnedTimes] = useState({});
   const [departTime,setDepartTime]   = useState(DEFAULT_DEPART);
   const [routeLocations,setRouteLocations] = useState([]);
   const [isOptimizing,setIsOptimizing]     = useState(false);
@@ -1081,6 +1099,11 @@ export default function App() {
     setSelectedIds(p=>p.includes(id)?p:[...p,id]);
   },[]);
 
+  const handleSetPinnedTime=useCallback((id,time)=>{
+    setPinnedTimes(prev=>time?{...prev,[id]:time}:Object.fromEntries(Object.entries(prev).filter(([k])=>k!==id)));
+    setSelectedIds(p=>time&&!p.includes(id)?[...p,id]:p);
+  },[]);
+
   // Bug 4 fixed: was {…office,...}
   const officeNode = useMemo(()=>({ ...office, id:"office", type:"office", stay:0 }),[office]);
 
@@ -1096,7 +1119,17 @@ export default function App() {
       const durMat = await fetchOsrmTable(tableNodes);
 
       // STEP2: ルート最適化（defer でブラウザフリーズ防止）
-      const optimized = await defer(()=>optimizeRoute(custs,priorityId,durMat));
+      let optimized = await defer(()=>optimizeRoute(custs,priorityId,durMat));
+
+      // ピン済み顧客を時刻昇順に並べ直す
+      const activePinned = optimized.filter(c=>pinnedTimes[c.id]);
+      if(activePinned.length>0){
+        const sortedPinned=[...activePinned].sort((a,b)=>t2m(pinnedTimes[a.id])-t2m(pinnedTimes[b.id]));
+        const pinnedPositions=optimized.map((c,i)=>pinnedTimes[c.id]?i:-1).filter(i=>i>=0);
+        const reordered=[...optimized];
+        pinnedPositions.forEach((pos,i)=>{reordered[pos]=sortedPinned[i];});
+        optimized=reordered;
+      }
 
       // STEP3: OSRM ポリライン並列取得
       const retNode = {...officeNode,id:"office_return",type:"office_return"};
@@ -1109,7 +1142,7 @@ export default function App() {
         if(i===0) return node;
         const pn=fullNodes[i-1], pi=tableIdx.get(pn.id)??-1, ci=tableIdx.get(node.id)??-1;
         const tm=(pi>=0&&ci>=0&&durMat[pi]?.[ci]!=null)?durMat[pi][ci]:fallbackMins(pn,node);
-        return {...node,travelMins:tm,osrmGeom:geoms[i]};
+        return {...node,travelMins:tm,osrmGeom:geoms[i],pinnedTime:pinnedTimes[node.id]??null};
       });
 
       const middle=withMeta.slice(1,withMeta.length-1);
@@ -1128,7 +1161,7 @@ export default function App() {
     } finally {
       setIsOptimizing(false);
     }
-  },[customers,selectedIds,priorityId,departTime,officeNode]);
+  },[customers,selectedIds,priorityId,pinnedTimes,departTime,officeNode]);
 
   const handleStayChange=useCallback((idx,delta)=>{
     // Bug 4 fixed: was {…l,stay:...}
@@ -1194,7 +1227,7 @@ export default function App() {
       <div className="max-w-xl mx-auto px-4 py-5">
         {tab==="route"
           ?(step==="select"
-            ?<LocationSelector customers={customers} selected={selectedIds} onToggle={handleToggle} priorityId={priorityId} onSetPriority={handleSetPriority} departTime={departTime} onDepartChange={setDepartTime} onSearch={handleSearch} isOptimizing={isOptimizing}/>
+            ?<LocationSelector customers={customers} selected={selectedIds} onToggle={handleToggle} priorityId={priorityId} onSetPriority={handleSetPriority} pinnedTimes={pinnedTimes} onSetPinnedTime={handleSetPinnedTime} departTime={departTime} onDepartChange={setDepartTime} onSearch={handleSearch} isOptimizing={isOptimizing}/>
             :<RouteResult schedule={schedule} priorityId={priorityId} usedFallback={usedFallback} onStayChange={handleStayChange} onMove={handleMove} onBack={handleBack}/>
           )
           :<DatabaseView customers={customers} onUpdate={setCustomers} onToast={showToast}/>
