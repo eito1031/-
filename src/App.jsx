@@ -1151,7 +1151,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white" style={{fontFamily:"'Noto Sans JP',sans-serif"}}>
-      <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
+      <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800"
+              style={{paddingTop:"env(safe-area-inset-top)"}}>
         <div className="max-w-xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-2">
