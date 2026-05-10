@@ -952,7 +952,7 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
                   custLabel={custLabels[i]}
                   onStayChange={onStayChange}
                   onMoveUp={(idx)=>onMove(idx,-1)} onMoveDown={(idx)=>onMove(idx,1)}
-                  canUp={i>1&&!(entry.type==="lunch"&&i===2)} canDown={i<last-1&&!(entry.type==="lunch"&&i===last-2)}
+                  canUp={i>1&&!(entry.type==="lunch"&&i===2)&&!(i===last-1&&schedule[i-1]?.type==="lunch")} canDown={i<last-1&&!(entry.type==="lunch"&&i===last-2)&&!(i===1&&schedule[i+1]?.type==="lunch")}
                 />
               </Fragment>
             );
@@ -1247,6 +1247,8 @@ export default function App() {
       const n=[...p],t=idx+dir;
       if(t<1||t>=n.length-1) return p;
       [n[idx],n[t]]=[n[t],n[idx]];
+      const li=n.findIndex(x=>x.type==="lunch");
+      if(li>=0&&(li===1||li===n.length-2)){[n[idx],n[t]]=[n[t],n[idx]];return p;}
       const lo=Math.min(idx,t);
       [idx,t,lo+1].forEach(j=>{
         if(j>0&&j<n.length){
