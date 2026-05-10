@@ -1009,7 +1009,7 @@ const InstallPrompt = () => {
               <Navigation size={22} className="text-white"/>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white leading-tight">ルート最適化ツール</p>
+              <p className="text-sm font-bold text-white leading-tight">RouteOpt</p>
               <p className="text-[11px] text-slate-400 mt-0.5">ホーム画面に追加するとオフラインでも使用可</p>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -1275,7 +1275,7 @@ export default function App() {
             <div className="flex items-center gap-2">
               <Navigation size={17} className="text-indigo-400"/>
               <div>
-                <h1 className="text-sm font-bold leading-tight tracking-tight">ルート最適化ツール</h1>
+                <h1 className="text-sm font-bold leading-tight tracking-tight">RouteOpt</h1>
                 <p className="text-[9px] text-slate-600">Sales Route Optimizer</p>
               </div>
             </div>
