@@ -722,7 +722,7 @@ const DatabaseView = ({ customers, onUpdate, onToast }) => {
         <button onClick={()=>setModal("add")} className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition-colors"><Plus size={13}/>追加</button>
         <button onClick={handleExport} className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition-colors"><Download size={13}/>エクスポート</button>
         <button onClick={()=>fileRef.current?.click()} className="flex items-center gap-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition-colors"><Upload size={13}/>インポート</button>
-        <input ref={fileRef} type="file" accept=".json" onChange={handleImport} className="hidden"/>
+        <input ref={fileRef} type="file" accept=".json,application/json,text/plain" onChange={handleImport} className="hidden"/>
       </div>
       <div className="relative">
         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/>
