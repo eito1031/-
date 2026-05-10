@@ -198,7 +198,6 @@ const optimizeDP = (custs, priorityId, durMat) => {
   let mask=full, cur=lastJ;
   while(mask>0){ order.push(rest[cur]); const p=prev[mask][cur]; mask^=(1<<cur); cur=p; }
   order.reverse();
-  // Bug 4 fixed: was [fixed,…order] (Unicode ellipsis U+2026)
   return fixed?[fixed,...order]:order;
 };
 
@@ -239,7 +238,6 @@ const optimize2opt = (custs, priorityId, durMat) => {
         const after =(durMat[pi]?.[route[j]]??0)+(durMat[route[i]]?.[pj]??0);
         if(after<before-0.5){
           const seg=route.slice(i,j+1).reverse();
-          // Bug 4 fixed: was […route.slice(0,i),…seg,…route.slice(j+1)]
           route=[...route.slice(0,i),...seg,...route.slice(j+1)];
           improved=true;
         }
@@ -506,7 +504,6 @@ const Toast = ({ msg, type="success", onClose }) => (
 // ═══════════════════════════════════════════════════════════════
 
 const OfficeSettingsModal = ({ office, onSave, onClose }) => {
-  // Bug 4 fixed: was {…office} (U+2026)
   const [form,setForm]=useState({...office});
   const [geocoding,setGeocoding]=useState(false);
   const [geoStatus,setGeoStatus]=useState(office.lat?"ok":"idle");
@@ -517,7 +514,6 @@ const OfficeSettingsModal = ({ office, onSave, onClose }) => {
     setGeocoding(true);setGeoStatus("idle");
     const r=await geocodeAddress(form.address);
     setGeocoding(false);
-    // Bug 4 fixed: was {…p,…r}
     if(r){setForm(p=>({...p,...r}));setGeoStatus("ok");}else setGeoStatus("error");
   };
 
@@ -541,14 +537,12 @@ const OfficeSettingsModal = ({ office, onSave, onClose }) => {
             <>
               <div>
                 <label className="text-xs text-slate-400 font-semibold mb-1 block">オフィス名</label>
-                {/* Bug 4 fixed: was {…p,name:...} */}
                 <input value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))}
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
               </div>
               <div>
                 <label className="text-xs text-slate-400 font-semibold mb-1 block">住所</label>
                 <div className="flex gap-2">
-                  {/* Bug 4 fixed: was {…p,address:...} */}
                   <input value={form.address} onChange={e=>{setForm(p=>({...p,address:e.target.value}));setGeoStatus("idle");}}
                     onKeyDown={e=>e.key==="Enter"&&(e.preventDefault(),handleGeocode())}
                     placeholder="例: 愛知県名古屋市中区千代田5丁目19-5"
@@ -564,7 +558,6 @@ const OfficeSettingsModal = ({ office, onSave, onClose }) => {
             </>
           ):(
             <>
-              {/* Bug 4 fixed: was {…p,lat,lng} */}
               <PinPickerMap lat={form.lat} lng={form.lng} onPinChange={(lat,lng)=>{setForm(p=>({...p,lat,lng}));setGeoStatus("ok");}}/>
               {form.lat&&<div className="bg-emerald-950/40 border border-emerald-700/30 rounded-lg px-3 py-1.5 text-[11px] text-emerald-300"><Check size={10} className="inline mr-1"/>ピン: {form.lat.toFixed(5)}, {form.lng.toFixed(5)}</div>}
             </>
@@ -586,12 +579,10 @@ const OfficeSettingsModal = ({ office, onSave, onClose }) => {
 const emptyForm=()=>({id:"",name:"",kana:"",address:"",area:"",defaultStay:20,lat:null,lng:null});
 
 const CustomerFormModal = ({ initial, onSave, onClose }) => {
-  // Bug 4 fixed: was {…emptyForm(),…initial,...}
   const [form,setForm]=useState(()=>initial?{...emptyForm(),...initial,lat:initial.lat??null,lng:initial.lng??null}:emptyForm());
   const [geocoding,setGeocoding]=useState(false);
   const [geoStatus,setGeoStatus]=useState(initial?.lat!=null?"ok":"idle");
   const [tab,setTab]=useState("form");
-  // Bug 4 fixed: was {…p,[k]:v}
   const set=(k,v)=>setForm(p=>({...p,[k]:v}));
 
   const handleGeocode=async()=>{
@@ -599,7 +590,6 @@ const CustomerFormModal = ({ initial, onSave, onClose }) => {
     setGeocoding(true);setGeoStatus("idle");
     const r=await geocodeAddress(addr);
     setGeocoding(false);
-    // Bug 4 fixed: was {…p,…r}
     if(r){setForm(p=>({...p,...r}));setGeoStatus("ok");}else setGeoStatus("error");
   };
 
@@ -608,7 +598,6 @@ const CustomerFormModal = ({ initial, onSave, onClose }) => {
     if(!form.address.trim()){alert("住所は必須です");return;}
     if(form.lat==null||form.lng==null){alert("座標を取得または地図でピンを設置してください");return;}
     if(initial&&(initial.lat!==form.lat||initial.lng!==form.lng)){purgeCacheFor(form.id);}
-    // Bug 4 fixed: was {…form,id:...}
     onSave({...form,id:form.id||`cust_${Date.now()}`,defaultStay:parseInt(form.defaultStay)||20});
   };
 
@@ -668,7 +657,6 @@ const CustomerFormModal = ({ initial, onSave, onClose }) => {
           ):(
             <>
               {!form.name.trim()&&<div className="bg-amber-950/30 border border-amber-700/30 rounded-xl px-3 py-2 text-xs text-amber-300 flex items-center gap-1.5"><AlertTriangle size={11}/>先にフォームで会社名を入力してください</div>}
-              {/* Bug 4 fixed: was {…p,lat,lng} */}
               <PinPickerMap lat={form.lat} lng={form.lng} onPinChange={(lat,lng)=>{setForm(p=>({...p,lat,lng}));setGeoStatus("ok");}}/>
               {form.lat!=null&&<div className="bg-emerald-950/40 border border-emerald-700/30 rounded-lg px-3 py-1.5 text-[11px] text-emerald-300"><Check size={10} className="inline mr-1"/>ピン: {form.lat.toFixed(5)}, {form.lng.toFixed(5)}</div>}
             </>
@@ -707,7 +695,6 @@ const DatabaseView = ({ customers, onUpdate, onToast }) => {
       try{
         const d=JSON.parse(ev.target.result);
         if(!Array.isArray(d)) throw 0;
-        // Bug 4 fixed: was […customers]
         if(window.confirm(`${d.length}件。[OK]上書き [キャンセル]追加`)){onUpdate(d);onToast(`${d.length}件で上書き`);}
         else{const m=[...customers];d.forEach(x=>{if(!m.find(c=>c.id===x.id))m.push(x);});onUpdate(m);onToast(`${d.length}件を追加`);}
       }catch{onToast("JSONの読み込みに失敗","error");}
@@ -751,7 +738,6 @@ const DatabaseView = ({ customers, onUpdate, onToast }) => {
           </div>
         ))}
       </div>
-      {/* Bug 4 fixed: was […customers,d] */}
       {modal==="add"&&<CustomerFormModal onSave={d=>{onUpdate([...customers,d]);setModal(null);onToast("追加しました");}} onClose={()=>setModal(null)}/>}
       {modal?.edit&&<CustomerFormModal initial={modal.edit} onSave={d=>{onUpdate(customers.map(c=>c.id===d.id?d:c));setModal(null);onToast("更新しました");}} onClose={()=>setModal(null)}/>}
       {confirm&&(
@@ -790,12 +776,6 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
           className="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
           {DEPART_OPTIONS.map(t=><option key={t} value={t}>{t} 出発</option>)}
         </select>
-      </div>
-      <div className="flex items-start gap-2 bg-indigo-950/40 border border-indigo-800/40 rounded-xl p-3">
-        <TrendingDown size={14} className="text-indigo-400 mt-0.5 flex-shrink-0"/>
-        <div className="text-xs text-indigo-300/80 leading-relaxed">
-          <strong className="text-indigo-200">最適化:</strong> 9件以内→ビットDP（厳密解）/ 10件以上→2-opt。昼食は全パターン探索で帰社時刻最短を選択。優先⚡は先頭固定。
-        </div>
       </div>
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
@@ -968,7 +948,7 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
               usedFallback={usedFallback&&!entry.osrmGeom&&entry.travelMins>0}
               onStayChange={onStayChange}
               onMoveUp={(idx)=>onMove(idx,-1)} onMoveDown={(idx)=>onMove(idx,1)}
-              canUp={i>1} canDown={i<last-1}
+              canUp={i>1&&!(entry.type==="lunch"&&i===2)} canDown={i<last-1&&!(entry.type==="lunch"&&i===last-2)}
             />
           ))}
         </div>
@@ -1093,14 +1073,12 @@ export default function App() {
   },[]);
 
   const handleToggle=useCallback((id)=>{
-    // Bug 4 fixed: was […p,id]
     setSelectedIds(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id]);
     setPriorityId(p=>p===id?null:p);
   },[]);
 
   const handleSetPriority=useCallback((id)=>{
     setPriorityId(p=>p===id?null:id);
-    // Bug 4 fixed: was […p,id]
     setSelectedIds(p=>p.includes(id)?p:[...p,id]);
   },[]);
 
@@ -1109,7 +1087,6 @@ export default function App() {
     setSelectedIds(p=>time&&!p.includes(id)?[...p,id]:p);
   },[]);
 
-  // Bug 4 fixed: was {…office,...}
   const officeNode = useMemo(()=>({ ...office, id:"office", type:"office", stay:0 }),[office]);
 
   // TSPTW-DP: 時刻指定あり・≤9件の完全最適化
@@ -1195,7 +1172,6 @@ export default function App() {
     setIsOptimizing(true);
     setUsedFallback(false);
     try {
-      // Bug 4 fixed: was {…c,...} and […custs]
       const custs = customers.filter(c=>selectedIds.includes(c.id)).map(c=>({...c,type:"customer",stay:c.defaultStay??DEFAULT_STAY}));
       const tableNodes = [officeNode, ...custs];
 
@@ -1257,16 +1233,18 @@ export default function App() {
   },[customers,selectedIds,priorityId,pinnedTimes,departTime,officeNode]);
 
   const handleStayChange=useCallback((idx,delta)=>{
-    // Bug 4 fixed: was {…l,stay:...}
     setRouteLocations(p=>p.map((l,i)=>i===idx?{...l,stay:Math.max(0,l.stay+delta)}:l));
   },[]);
 
   const handleMove=useCallback((idx,dir)=>{
     setRouteLocations(p=>{
-      // Bug 4 fixed: was […p]
       const n=[...p],t=idx+dir;
       if(t<1||t>=n.length-1) return p;
-      [n[idx],n[t]]=[n[t],n[idx]]; return n;
+      [n[idx],n[t]]=[n[t],n[idx]];
+      [idx,t,Math.min(idx,t)+1].forEach(i=>{
+        if(i>0&&i<n.length) n[i]={...n[i],travelMins:undefined};
+      });
+      return n;
     });
   },[]);
 
