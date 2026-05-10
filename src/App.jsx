@@ -1224,8 +1224,20 @@ export default function App() {
       // STEP5: 昼食挿入位置全探索（defer でブラウザフリーズ防止）
       const {insertIdx,stay:lSt} = await defer(()=>bestLunchPosition(middle,retMeta,departTime,DEFAULT_LUNCH_STAY));
 
-      const withLunch=[...middle.slice(0,insertIdx),{...LUNCH_TMPL,lat:officeNode.lat,lng:officeNode.lng,stay:lSt},...middle.slice(insertIdx)];
-      setRouteLocations([withMeta[0],...[...withLunch].reverse(),retMeta]);
+      const withLunch=[...middle.slice(0,insertIdx),{...LUNCH_TMPL,stay:lSt},...middle.slice(insertIdx)];
+      const reversed=[...withLunch].reverse();
+      const nodeTableIdx=(n)=>n.type==="office_return"?tableIdx.get("office")??-1:tableIdx.get(n.id)??-1;
+      let prevNonLunch=withMeta[0];
+      const recomputed=reversed.map(node=>{
+        if(node.type==="lunch") return {...node,travelMins:0};
+        const ai=nodeTableIdx(prevNonLunch),bi=nodeTableIdx(node);
+        const tm=(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(prevNonLunch,node);
+        prevNonLunch=node;
+        return {...node,travelMins:tm};
+      });
+      const ai=nodeTableIdx(prevNonLunch),bi=nodeTableIdx(retMeta);
+      const retTm=(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(prevNonLunch,retMeta);
+      setRouteLocations([withMeta[0],...recomputed,{...retMeta,travelMins:retTm}]);
       setUsedFallback(!geoms.some(g=>g&&g.length>2));
       setStep("result");
     } catch(err) {
