@@ -77,7 +77,7 @@ const ls = {
   del: (k)   => { try { localStorage.removeItem(k); } catch{} },
 };
 
-const loadMaster  = () => ls.get(LS_KEY_MASTER, SAMPLE_CUSTOMERS);
+const loadMaster  = () => { const d=ls.get(LS_KEY_MASTER,null); return (d&&d.length>0)?d:SAMPLE_CUSTOMERS; };
 const saveMaster  = (d) => ls.set(LS_KEY_MASTER, d);
 const loadCache   = () => ls.get(LS_KEY_CACHE, {});
 const saveCache   = (c) => ls.set(LS_KEY_CACHE, c);
