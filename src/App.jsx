@@ -1,5 +1,5 @@
 // ─── RouteOpt App — Full Rewrite ───────────────────────────────
-import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef, Fragment } from "react";
 import CUSTOMERS from "./customers.js";
 import {
   Clock, MapPin, Navigation, Building2, RefreshCw, ArrowUp, ArrowDown,
@@ -939,7 +939,7 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
           {schedule.map((entry,i)=>{
             const isFallback=usedFallback&&!entry.osrmGeom&&entry.travelMins>0;
             return (
-              <React.Fragment key={entry.id+"-"+i}>
+              <Fragment key={entry.id+"-"+i}>
                 {i>0&&(entry.travelMins>0?(
                   <div className="flex items-center justify-center py-1">
                     <div className={`flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${isFallback?"text-amber-400 bg-slate-900 border-amber-700/40":"text-slate-400 bg-slate-900 border-slate-700/50"}`}>
@@ -954,7 +954,7 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
                   onMoveUp={(idx)=>onMove(idx,-1)} onMoveDown={(idx)=>onMove(idx,1)}
                   canUp={i>1&&!(entry.type==="lunch"&&i===2)} canDown={i<last-1&&!(entry.type==="lunch"&&i===last-2)}
                 />
-              </React.Fragment>
+              </Fragment>
             );
           })}
         </div>
@@ -1248,7 +1248,7 @@ export default function App() {
       if(t<1||t>=n.length-1) return p;
       [n[idx],n[t]]=[n[t],n[idx]];
       [idx,t,Math.min(idx,t)+1].forEach(i=>{
-        if(i>0&&i<n.length) n[i]={...n[i],travelMins:undefined};
+        if(i>0&&i<n.length) n[i]={...n[i],travelMins:n[i].type==="lunch"?0:undefined};
       });
       return n;
     });
