@@ -1221,23 +1221,24 @@ export default function App() {
       const middle=withMeta.slice(1,withMeta.length-1);
       const retMeta=withMeta[withMeta.length-1];
 
-      // STEP5: 昼食挿入位置全探索（defer でブラウザフリーズ防止）
-      const {insertIdx,stay:lSt} = await defer(()=>bestLunchPosition(middle,retMeta,departTime,DEFAULT_LUNCH_STAY));
-
-      const withLunch=[...middle.slice(0,insertIdx),{...LUNCH_TMPL,stay:lSt},...middle.slice(insertIdx)];
-      const reversed=[...withLunch].reverse();
+      // STEP5: 逆順でtravelMins再計算 → 逆順に基づいた昼食位置探索
       const nodeTableIdx=(n)=>n.type==="office_return"?tableIdx.get("office")??-1:tableIdx.get(n.id)??-1;
-      let prevNonLunch=withMeta[0];
-      const recomputed=reversed.map(node=>{
-        if(node.type==="lunch") return {...node,travelMins:0};
-        const ai=nodeTableIdx(prevNonLunch),bi=nodeTableIdx(node);
-        const tm=(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(prevNonLunch,node);
-        prevNonLunch=node;
-        return {...node,travelMins:tm};
+      const tmBetween=(a,b)=>{const ai=nodeTableIdx(a),bi=nodeTableIdx(b);return(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(a,b);};
+
+      let prevRev=withMeta[0];
+      const reversedMiddle=[...middle].reverse().map(node=>{
+        const tm=tmBetween(prevRev,node); prevRev=node; return {...node,travelMins:tm};
       });
-      const ai=nodeTableIdx(prevNonLunch),bi=nodeTableIdx(retMeta);
-      const retTm=(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(prevNonLunch,retMeta);
-      setRouteLocations([withMeta[0],...recomputed,{...retMeta,travelMins:retTm}]);
+      const recomputedRet={...retMeta,travelMins:tmBetween(prevRev,retMeta)};
+
+      const {insertIdx,stay:lSt}=await defer(()=>bestLunchPosition(reversedMiddle,recomputedRet,departTime,DEFAULT_LUNCH_STAY));
+
+      const withLunch=[
+        ...reversedMiddle.slice(0,insertIdx),
+        {...LUNCH_TMPL,stay:lSt,travelMins:0},
+        ...reversedMiddle.slice(insertIdx),
+      ];
+      setRouteLocations([withMeta[0],...withLunch,recomputedRet]);
       setUsedFallback(!geoms.some(g=>g&&g.length>2));
       setStep("result");
     } catch(err) {
