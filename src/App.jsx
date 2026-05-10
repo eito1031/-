@@ -915,7 +915,7 @@ const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, 
 // SECTION 15: ROUTE RESULT (STEP 2)
 // ═══════════════════════════════════════════════════════════════
 
-const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove, onBack, onReverse }) => {
+const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove, onBack }) => {
   const custN=schedule.filter(e=>e.type==="customer").length;
   const total=schedule.reduce((s,e)=>s+(e.type!=="lunch"?(e.travelMins||0):0),0);
   const retEnt=schedule.find(e=>e.type==="office_return");
@@ -951,7 +951,6 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-emerald-500 bg-emerald-950/40 inline-block"/>優先</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-amber-500 bg-amber-950/40 inline-block"/>昼食</span>
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-orange-500 bg-orange-950/30 inline-block"/>時間ずれ</span>
-            <button onClick={onReverse} className="flex items-center gap-1 bg-slate-700 hover:bg-slate-600 text-slate-300 font-semibold px-2 py-1 rounded-lg transition-colors"><RefreshCw size={9}/>逆順</button>
           </div>
         </div>
         <div className="space-y-2">
@@ -1226,7 +1225,7 @@ export default function App() {
       const {insertIdx,stay:lSt} = await defer(()=>bestLunchPosition(middle,retMeta,departTime,DEFAULT_LUNCH_STAY));
 
       const withLunch=[...middle.slice(0,insertIdx),{...LUNCH_TMPL,lat:officeNode.lat,lng:officeNode.lng,stay:lSt},...middle.slice(insertIdx)];
-      setRouteLocations([withMeta[0],...withLunch,retMeta]);
+      setRouteLocations([withMeta[0],...[...withLunch].reverse(),retMeta]);
       setUsedFallback(!geoms.some(g=>g&&g.length>2));
       setStep("result");
     } catch(err) {
@@ -1252,9 +1251,6 @@ export default function App() {
   },[]);
 
   const handleBack  = useCallback(()=>setStep("select"),[]);
-  const handleReverse = useCallback(()=>{
-    setRouteLocations(p=>[p[0],...[...p.slice(1,p.length-1)].reverse(),p[p.length-1]]);
-  },[]);
   const handleReset = useCallback(()=>{setStep("select");setSelectedIds([]);setPriorityId(null);setDepartTime(DEFAULT_DEPART);setRouteLocations([]);},[]);
 
   const schedule=useMemo(()=>step==="result"?calcSchedule(routeLocations,departTime):[],[routeLocations,departTime,step]);
@@ -1305,7 +1301,7 @@ export default function App() {
         {tab==="route"
           ?(step==="select"
             ?<LocationSelector customers={customers} selected={selectedIds} onToggle={handleToggle} priorityId={priorityId} onSetPriority={handleSetPriority} pinnedTimes={pinnedTimes} onSetPinnedTime={handleSetPinnedTime} departTime={departTime} onDepartChange={setDepartTime} onSearch={handleSearch} isOptimizing={isOptimizing}/>
-            :<RouteResult schedule={schedule} priorityId={priorityId} usedFallback={usedFallback} onStayChange={handleStayChange} onMove={handleMove} onBack={handleBack} onReverse={handleReverse}/>
+            :<RouteResult schedule={schedule} priorityId={priorityId} usedFallback={usedFallback} onStayChange={handleStayChange} onMove={handleMove} onBack={handleBack}/>
           )
           :<DatabaseView customers={customers} onUpdate={d=>setCustomers([...d].sort((a,b)=>(a.kana||a.name).localeCompare(b.kana||b.name,"ja")))} onToast={showToast}/>
         }
