@@ -782,6 +782,7 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
   const canSearch=selected.length>0&&noCoordSelected.length===0&&!isOptimizing;
 
   return (
+    <>
     <div className="space-y-4">
       <div className="bg-slate-800/60 rounded-2xl border border-slate-700/50 p-4">
         <label className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><Clock size={11} className="text-indigo-400"/>出発時刻</label>
@@ -843,13 +844,19 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
           );
         })}
       </div>
-      <button onClick={onSearch} disabled={!canSearch}
-        className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold tracking-wide transition-all active:scale-[0.98] ${canSearch?"bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/40":"bg-slate-800 text-slate-600 cursor-not-allowed"}`}>
-        {isOptimizing?<><Loader2 size={15} className="animate-spin"/>最適化中…</>:<><Search size={15}/>ルートを最適化して検索<ChevronRight size={15} className="ml-1"/></>}
-      </button>
-      {selected.length===0&&<p className="text-center text-xs text-slate-600">1件以上を選択してください</p>}
-      {noCoordSelected.length>0&&selected.length>0&&<p className="text-center text-xs text-amber-500 flex items-center justify-center gap-1"><AlertTriangle size={11}/>座標未取得の訪問先があります。マスターで住所を登録してください。</p>}
+      <div style={{height:"80px"}}/>
     </div>
+    <div className="sticky bottom-0 z-20 px-4 pb-4 pt-2 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent pointer-events-none">
+      <div className="pointer-events-auto space-y-1">
+        {selected.length===0&&<p className="text-center text-xs text-slate-500">1件以上を選択してください</p>}
+        {noCoordSelected.length>0&&selected.length>0&&<p className="text-center text-xs text-amber-500 flex items-center justify-center gap-1"><AlertTriangle size={11}/>座標未取得の訪問先があります。マスターで住所を登録してください。</p>}
+        <button onClick={onSearch} disabled={!canSearch}
+          className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-bold tracking-wide transition-all active:scale-[0.98] shadow-xl ${canSearch?"bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/60":"bg-slate-800 text-slate-600 cursor-not-allowed"}`}>
+          {isOptimizing?<><Loader2 size={15} className="animate-spin"/>最適化中…</>:<><Search size={15}/>ルートを最適化して検索<ChevronRight size={15} className="ml-1"/></>}
+        </button>
+      </div>
+    </div>
+    </>
   );
 };
 
