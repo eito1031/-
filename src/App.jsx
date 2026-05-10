@@ -37,7 +37,7 @@ const defer = (fn) => new Promise(res => setTimeout(() => res(fn()), 0));
 const DEFAULT_DEPART     = "10:30";
 const DEFAULT_STAY       = 20;
 const DEFAULT_LUNCH_STAY = 40;
-const LS_KEY_MASTER      = "routeopt_master_v3";
+const LS_KEY_MASTER      = "routeopt_master_v4";
 const LS_KEY_CACHE       = "routeopt_dist_cache_v2";
 const LS_KEY_OFFICE      = "routeopt_office_v1";
 const VISIT_S = t2m("12:00");
