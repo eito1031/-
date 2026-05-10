@@ -844,7 +844,7 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
 // SECTION 14: SCHEDULE ROW (STEP 2)
 // ═══════════════════════════════════════════════════════════════
 
-const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, canDown, isPriority, custLabel, usedFallback }) => {
+const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, canDown, isPriority, custLabel }) => {
   const isOffice=entry.type==="office", isReturn=entry.type==="office_return", isOfficeAny=isOffice||isReturn;
   const isLunch=entry.type==="lunch";
   const isLunchAdj=entry.type==="customer"&&entry.arrivalMins===VISIT_E;
@@ -866,11 +866,6 @@ const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, 
             {isReturn&&<span className="text-[9px] text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded font-semibold">帰社</span>}
             {isPriority&&<Zap size={11} className="text-emerald-400 flex-shrink-0"/>}
           </div>
-          {!isLunch&&entry.travelMins>0&&(
-            <div className={`flex items-center gap-1 text-[11px] mb-1.5 ${usedFallback?"text-amber-600":"text-slate-500"}`}>
-              <Navigation size={9}/><span>移動 {entry.travelMins}分{usedFallback?" (直線×1.4)":""}</span>
-            </div>
-          )}
           {entry.type==="customer"&&entry.address&&<div className="text-[10px] text-slate-600 truncate mb-1.5 flex items-center gap-1"><MapPin size={8} className="text-slate-700"/>{entry.address}</div>}
           <div className="flex flex-wrap gap-1.5 text-[11px]">
             <span className="flex items-center gap-1 bg-slate-700/60 rounded-lg px-2 py-0.5">
@@ -940,17 +935,28 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-orange-500 bg-orange-950/30 inline-block"/>時間ずれ</span>
           </div>
         </div>
-        <div className="space-y-2">
-          {schedule.map((entry,i)=>(
-            <ScheduleRow key={entry.id+"-"+i} entry={entry} index={i}
-              isPriority={entry.type==="customer"&&entry.id===priorityId}
-              custLabel={custLabels[i]}
-              usedFallback={usedFallback&&!entry.osrmGeom&&entry.travelMins>0}
-              onStayChange={onStayChange}
-              onMoveUp={(idx)=>onMove(idx,-1)} onMoveDown={(idx)=>onMove(idx,1)}
-              canUp={i>1&&!(entry.type==="lunch"&&i===2)} canDown={i<last-1&&!(entry.type==="lunch"&&i===last-2)}
-            />
-          ))}
+        <div className="flex flex-col">
+          {schedule.map((entry,i)=>{
+            const isFallback=usedFallback&&!entry.osrmGeom&&entry.travelMins>0;
+            return (
+              <React.Fragment key={entry.id+"-"+i}>
+                {i>0&&(entry.travelMins>0?(
+                  <div className="flex items-center justify-center py-1">
+                    <div className={`flex items-center gap-1 text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${isFallback?"text-amber-400 bg-slate-900 border-amber-700/40":"text-slate-400 bg-slate-900 border-slate-700/50"}`}>
+                      <span>⇣</span><span>{entry.travelMins}分{isFallback?" (直線)":""}</span>
+                    </div>
+                  </div>
+                ):<div className="h-2"/>)}
+                <ScheduleRow entry={entry} index={i}
+                  isPriority={entry.type==="customer"&&entry.id===priorityId}
+                  custLabel={custLabels[i]}
+                  onStayChange={onStayChange}
+                  onMoveUp={(idx)=>onMove(idx,-1)} onMoveDown={(idx)=>onMove(idx,1)}
+                  canUp={i>1&&!(entry.type==="lunch"&&i===2)} canDown={i<last-1&&!(entry.type==="lunch"&&i===last-2)}
+                />
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
       <button onClick={onBack} className="w-full py-3 rounded-2xl border border-slate-600 text-slate-400 hover:text-white hover:bg-slate-800 text-sm font-semibold transition-colors">← 地点選択に戻る</button>
