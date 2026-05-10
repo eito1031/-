@@ -1074,7 +1074,7 @@ export default function App() {
   const [usedFallback,setUsedFallback]     = useState(false);
   const [showOfficeSetting,setShowOfficeSetting] = useState(false);
 
-  const [customers,setCustomers] = useState(loadMaster);
+  const [customers,setCustomers] = useState(()=>[...loadMaster()].sort((a,b)=>(a.kana||a.name).localeCompare(b.kana||b.name,"ja")));
   const [office,setOffice]       = useState(loadOffice);
   const [toast,setToast]         = useState(null);
 
@@ -1303,7 +1303,7 @@ export default function App() {
             ?<LocationSelector customers={customers} selected={selectedIds} onToggle={handleToggle} priorityId={priorityId} onSetPriority={handleSetPriority} pinnedTimes={pinnedTimes} onSetPinnedTime={handleSetPinnedTime} departTime={departTime} onDepartChange={setDepartTime} onSearch={handleSearch} isOptimizing={isOptimizing}/>
             :<RouteResult schedule={schedule} priorityId={priorityId} usedFallback={usedFallback} onStayChange={handleStayChange} onMove={handleMove} onBack={handleBack}/>
           )
-          :<DatabaseView customers={customers} onUpdate={setCustomers} onToast={showToast}/>
+          :<DatabaseView customers={customers} onUpdate={d=>setCustomers([...d].sort((a,b)=>(a.kana||a.name).localeCompare(b.kana||b.name,"ja")))} onToast={showToast}/>
         }
       </div>
       {showOfficeSetting&&<OfficeSettingsModal office={office} onSave={o=>{setOffice(o);setShowOfficeSetting(false);showToast("オフィス設定を保存しました");}} onClose={()=>setShowOfficeSetting(false)}/>}
