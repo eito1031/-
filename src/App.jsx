@@ -301,7 +301,7 @@ const calcSchedule = (locations, departTime) => {
   const result=[]; let cursor=t2m(departTime);
   for(let i=0;i<locations.length;i++){
     const loc=locations[i];
-    const travelMins=i===0?0:(loc.travelMins??fallbackMins(locations[i-1],loc));
+    const travelMins=i===0?0:(loc.travelMins??(locations[i-1].type==="lunch"?0:fallbackMins(locations[i-1],loc)));
     let arr=i===0?cursor:cursor+travelMins;
 
     if(loc.type==="customer"){
@@ -1247,8 +1247,13 @@ export default function App() {
       const n=[...p],t=idx+dir;
       if(t<1||t>=n.length-1) return p;
       [n[idx],n[t]]=[n[t],n[idx]];
-      [idx,t,Math.min(idx,t)+1].forEach(i=>{
-        if(i>0&&i<n.length) n[i]={...n[i],travelMins:n[i].type==="lunch"?0:undefined};
+      const lo=Math.min(idx,t);
+      [idx,t,lo+1].forEach(j=>{
+        if(j>0&&j<n.length){
+          if(n[j].type==="lunch") n[j]={...n[j],travelMins:0};
+          else if(j===lo+1&&n[lo]?.type==="lunch"){/* 昼食直後: lat/lng なし → stale OSRM値を保持 */}
+          else n[j]={...n[j],travelMins:undefined};
+        }
       });
       return n;
     });
