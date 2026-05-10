@@ -38,9 +38,14 @@ const defer = (fn) => new Promise(res => setTimeout(() => res(fn()), 0));
 const DEFAULT_DEPART     = "10:30";
 const DEFAULT_STAY       = 20;
 const DEFAULT_LUNCH_STAY = 40;
-const LS_KEY_MASTER      = "routeopt_master_v5";
-const LS_KEY_CACHE       = "routeopt_dist_cache_v2";
-const LS_KEY_OFFICE      = "routeopt_office_v1";
+const LS_KEY_MASTER      = "routeopt_master";
+const LS_KEY_CACHE       = "routeopt_dist_cache";
+const LS_KEY_OFFICE      = "routeopt_office";
+
+// 旧バージョンキーを削除
+["routeopt_master_v1","routeopt_master_v2","routeopt_master_v3","routeopt_master_v4","routeopt_master_v5",
+ "routeopt_dist_cache_v1","routeopt_dist_cache_v2","routeopt_office_v1"]
+  .forEach(k=>{ try{localStorage.removeItem(k);}catch{} });
 const VISIT_S = t2m("12:00");
 const VISIT_E = t2m("13:00");
 const LUNCH_S = t2m("11:45");
