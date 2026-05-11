@@ -722,6 +722,7 @@ const DatabaseView = ({ customers, onUpdate, onToast }) => {
       <div className="relative">
         <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/>
         <input type="text" value={q} onChange={e=>setQ(e.target.value)} placeholder="スペース区切りでAND検索 例: とよた ほんしゃ"
+          style={{fontSize:'16px'}}
           className="w-full bg-slate-800/70 border border-slate-700 rounded-xl pl-8 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
       </div>
       <div className="text-xs text-slate-500 flex justify-between"><span>{filtered.length}件 / 全{customers.length}件</span><span className="text-slate-600">localStorageに自動保存</span></div>
@@ -789,6 +790,7 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
         <div className="relative flex-1">
           <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"/>
           <input type="text" value={q} onChange={e=>setQ(e.target.value)} placeholder="スペース区切りでAND検索…"
+            style={{fontSize:'16px'}}
             className="w-full bg-slate-800/70 border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
         </div>
         <span className="text-xs text-indigo-400 font-bold whitespace-nowrap">{selected.length}件選択</span>
