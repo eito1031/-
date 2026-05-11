@@ -1223,27 +1223,18 @@ export default function App() {
       const middle=withMeta.slice(1,withMeta.length-1);
       const retMeta=withMeta[withMeta.length-1];
 
-      // STEP5: 逆順でtravelMins再計算 → 逆順に基づいた昼食位置探索
-      const nodeTableIdx=(n)=>n.type==="office_return"?tableIdx.get("office")??-1:tableIdx.get(n.id)??-1;
-      const tmBetween=(a,b)=>{const ai=nodeTableIdx(a),bi=nodeTableIdx(b);return(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(a,b);};
-
-      let prevRev=withMeta[0];
-      const reversedMiddle=[...middle].reverse().map(node=>{
-        const tm=tmBetween(prevRev,node); prevRev=node; return {...node,travelMins:tm};
-      });
-      const recomputedRet={...retMeta,travelMins:tmBetween(prevRev,retMeta)};
-
-      const {insertIdx,stay:lSt}=await defer(()=>bestLunchPosition(reversedMiddle,recomputedRet,departTime,DEFAULT_LUNCH_STAY));
+      // STEP5: 前向き順序のまま昼食位置探索（middleのtravelMinsはwithMetaで正しく設定済み）
+      const {insertIdx,stay:lSt}=await defer(()=>bestLunchPosition(middle,retMeta,departTime,DEFAULT_LUNCH_STAY));
 
       // 「移動してから昼食」: 次ノードのtravelMinsを昼食ノードに移し、次ノードは0に
-      const lunchNextNode=reversedMiddle[insertIdx];
+      const lunchNextNode=middle[insertIdx];
       const lunchTm=lunchNextNode?(lunchNextNode.travelMins??0):0;
       const withLunch=[
-        ...reversedMiddle.slice(0,insertIdx),
+        ...middle.slice(0,insertIdx),
         {...LUNCH_TMPL,stay:lSt,travelMins:lunchTm},
-        ...reversedMiddle.slice(insertIdx).map((node,j)=>j===0?{...node,travelMins:0}:node),
+        ...middle.slice(insertIdx).map((node,j)=>j===0?{...node,travelMins:0}:node),
       ];
-      setRouteLocations([withMeta[0],...withLunch,recomputedRet]);
+      setRouteLocations([withMeta[0],...withLunch,retMeta]);
       setUsedFallback(!geoms.some(g=>g&&g.length>2));
       setStep("result");
     } catch(err) {
