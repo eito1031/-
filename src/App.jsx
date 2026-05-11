@@ -1204,6 +1204,14 @@ export default function App() {
         return two_phase_route(custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime);
       });
 
+      // 帰宅ラッシュ回避: 遠い方から訪問（先頭固定・時刻指定なし時のみ）
+      if(!hasPinned&&!priorityId&&optimized.length>1){
+        const custIdx=new Map(custs.map((c,i)=>[c.id,i+1]));
+        const d0=durMat[0]?.[custIdx.get(optimized[0].id)]??0;
+        const dN=durMat[0]?.[custIdx.get(optimized[optimized.length-1].id)]??0;
+        if(d0<dN) optimized=[...optimized].reverse();
+      }
+
       // STEP3: OSRM ポリライン並列取得
       const retNode = {...officeNode,id:"office_return",type:"office_return"};
       const fullNodes = [officeNode,...optimized,retNode];
