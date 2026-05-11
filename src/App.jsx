@@ -854,32 +854,34 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
 // SECTION 14: SCHEDULE ROW (STEP 2)
 // ═══════════════════════════════════════════════════════════════
 
-const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, canDown, isPriority, custLabel }) => {
+const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, canDown, isPriority, isPinned, custLabel }) => {
   const isOffice=entry.type==="office", isReturn=entry.type==="office_return", isOfficeAny=isOffice||isReturn;
   const isLunch=entry.type==="lunch";
   const isLunchAdj=entry.type==="customer"&&entry.arrivalMins===VISIT_E;
 
   const badge=isLunch?<UtensilsCrossed size={11}/>:isOfficeAny?<Building2 size={11}/>:custLabel;
-  const cardBg=isLunch?"border-amber-500/60 bg-amber-950/30":isOfficeAny?"border-slate-600/50 bg-slate-800/60":isPriority?"border-emerald-500/60 bg-emerald-950/30":isLunchAdj?"border-orange-500/60 bg-orange-950/25":"border-indigo-500/30 bg-slate-800/35";
-  const badgeBg=isLunch?"bg-amber-600":isOfficeAny?"bg-slate-600":isPriority?"bg-emerald-600":"bg-indigo-600";
+  const cardBg=isLunch?"border-amber-500/60 bg-amber-950/30":isOfficeAny?"border-slate-600/50 bg-slate-800/60":isPriority?"border-emerald-500/60 bg-emerald-950/30":isPinned?"border-amber-400/50 bg-amber-950/20":isLunchAdj?"border-orange-500/60 bg-orange-950/25":"border-indigo-500/30 bg-slate-800/35";
+  const badgeBg=isLunch?"bg-amber-600":isOfficeAny?"bg-slate-600":isPriority?"bg-emerald-600":isPinned?"bg-amber-600":"bg-indigo-600";
+  const accentColor=isPriority?"text-emerald-400":isPinned?"text-amber-400":"text-indigo-400";
 
   return (
     <div className={`relative rounded-xl border p-3.5 ${cardBg}`}>
       {isLunchAdj&&!isPriority&&<div className="absolute -top-2.5 left-3 bg-orange-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full">⚠ 昼休み後に自動調整</div>}
       {isPriority&&<div className="absolute -top-2.5 right-3 flex items-center gap-0.5 bg-emerald-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full"><Zap size={8}/>優先訪問</div>}
+      {isPinned&&!isPriority&&<div className="absolute -top-2.5 right-3 flex items-center gap-0.5 bg-amber-500 text-white text-[8px] font-bold px-2 py-0.5 rounded-full"><Clock size={8}/>{entry.pinnedTime}指定</div>}
       <div className="flex items-start gap-2.5">
         <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${badgeBg} text-white`}>{badge}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-            {isLunch?<UtensilsCrossed size={12} className="text-amber-400"/>:isOfficeAny?<Building2 size={12} className="text-slate-400"/>:<MapPin size={12} className={isPriority?"text-emerald-400":"text-indigo-400"}/>}
-            <span className={`text-sm font-semibold truncate ${isPriority?"text-emerald-100":"text-slate-100"}`}>{isReturn?"自社オフィス":entry.name}</span>
+            {isLunch?<UtensilsCrossed size={12} className="text-amber-400"/>:isOfficeAny?<Building2 size={12} className="text-slate-400"/>:<MapPin size={12} className={accentColor}/>}
+            <span className={`text-sm font-semibold truncate ${isPriority?"text-emerald-100":isPinned?"text-amber-100":"text-slate-100"}`}>{isReturn?"自社オフィス":entry.name}</span>
             {isReturn&&<span className="text-[9px] text-slate-500 bg-slate-700/60 px-1.5 py-0.5 rounded font-semibold">帰社</span>}
             {isPriority&&<Zap size={11} className="text-emerald-400 flex-shrink-0"/>}
           </div>
           {entry.type==="customer"&&entry.address&&<div className="text-[10px] text-slate-600 truncate mb-1.5 flex items-center gap-1"><MapPin size={8} className="text-slate-700"/>{entry.address}</div>}
           <div className="flex flex-wrap gap-1.5 text-[11px]">
             <span className="flex items-center gap-1 bg-slate-700/60 rounded-lg px-2 py-0.5">
-              <Clock size={9} className={isLunch?"text-amber-400":isPriority?"text-emerald-400":"text-indigo-400"}/>
+              <Clock size={9} className={isLunch?"text-amber-400":accentColor}/>
               <span className="text-slate-300">{isLunch?"開始":isReturn?"帰着":"到着"} <strong className="text-white">{entry.arrivalTime}</strong></span>
             </span>
             {!isOffice&&!isReturn&&<span className="flex items-center gap-1 bg-slate-700/60 rounded-lg px-2 py-0.5">
@@ -890,7 +892,7 @@ const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, 
           {!isOfficeAny&&<div className="flex items-center gap-2 mt-2">
             <span className="text-[11px] text-slate-500">{isLunch?"休憩:":"滞在:"}</span>
             <button onClick={()=>onStayChange(index,-10)} className="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold flex items-center justify-center text-sm">−</button>
-            <span className={`text-sm font-semibold w-11 text-center ${isLunch?"text-amber-300":isPriority?"text-emerald-300":"text-indigo-300"}`}>{entry.stay}分</span>
+            <span className={`text-sm font-semibold w-11 text-center ${isLunch?"text-amber-300":isPriority?"text-emerald-300":isPinned?"text-amber-300":"text-indigo-300"}`}>{entry.stay}分</span>
             <button onClick={()=>onStayChange(index,10)} className="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold flex items-center justify-center text-sm">＋</button>
           </div>}
         </div>
@@ -959,6 +961,7 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
                 ):<div className="h-2"/>)}
                 <ScheduleRow entry={entry} index={i}
                   isPriority={entry.type==="customer"&&entry.id===priorityId}
+                  isPinned={entry.type==="customer"&&!!entry.pinnedTime}
                   custLabel={custLabels[i]}
                   onStayChange={onStayChange}
                   onMoveUp={(idx)=>onMove(idx,-1)} onMoveDown={(idx)=>onMove(idx,1)}
@@ -1198,9 +1201,7 @@ export default function App() {
       const hasPinned=custs.some(c=>pinnedTimes[c.id]);
       let optimized = await defer(()=>{
         if(!hasPinned) return optimizeRoute(custs,priorityId,durMat);
-        return custs.length<=9
-          ? tsptw_dp(custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime)
-          : two_phase_route(custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime);
+        return two_phase_route(custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime);
       });
 
       // STEP3: OSRM ポリライン並列取得
