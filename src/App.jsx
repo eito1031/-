@@ -1137,7 +1137,16 @@ export default function App() {
     const route=[];
     for(let wi=0;wi<windowSets.length;wi++){
       const wCusts=windowSets[wi];
-      const opt=wCusts.length>1?optimize2opt(wCusts,wi===0?priorityId:null,durMat):wCusts;
+      // 窓の開始点から最近傍順に並べ替え（optimize2optの「遠い順」では窓内でジグザグになる）
+      let opt=wCusts;
+      if(wCusts.length>1){
+        const wStart=wi===0?officeNode:pinned[wi-1];
+        let cur=wStart,rem=[...wCusts],sorted=[];
+        // priorityId顧客は先頭固定
+        if(wi===0&&priorityId){const pi=rem.findIndex(c=>c.id===priorityId);if(pi>=0){sorted.push(...rem.splice(pi,1));cur=sorted[0];}}
+        while(rem.length){let bi=0,bt=Infinity;rem.forEach((c,i)=>{const t=getT(cur,c);if(t<bt){bt=t;bi=i;}});sorted.push(rem[bi]);cur=rem[bi];rem.splice(bi,1);}
+        opt=sorted;
+      }
       route.push(...opt);
       if(wi<pinned.length)route.push(pinned[wi]);
     }
