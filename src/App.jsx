@@ -271,12 +271,14 @@ const bestLunchPosition = (middle, retNode, departTime, lunchStay) => {
         if(la+lSt>LUNCH_E) return Infinity;
         cur=la+lSt;
         let arr=cur;
+        if(c.pinnedTime) arr=Math.max(arr,t2m(c.pinnedTime));
         const end=arr+c.stay;
         if((arr>=VISIT_S&&arr<VISIT_E)||(arr<VISIT_S&&end>VISIT_S)) arr=VISIT_E;
         cur=arr+c.stay;
         continue;
       }
       let arr=cur+(c.travelMins??0);
+      if(c.pinnedTime) arr=Math.max(arr,t2m(c.pinnedTime));
       const end=arr+c.stay;
       if((arr>=VISIT_S&&arr<VISIT_E)||(arr<VISIT_S&&end>VISIT_S)) arr=VISIT_E;
       cur=arr+c.stay;
