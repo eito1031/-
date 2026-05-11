@@ -256,18 +256,26 @@ const optimizeRoute = (custs,priorityId,durMat) =>
 // ═══════════════════════════════════════════════════════════════
 
 // travelMins付きノード列で全挿入位置を評価し帰社時刻最短の位置を返す
+// 「移動してから昼食」: ins位置のノードへの移動時間を昼食前に消費し、訪問時は移動0
 const bestLunchPosition = (middle, retNode, departTime, lunchStay) => {
   const MIN_L=30, MAX_L=70, n=middle.length;
 
   const simulate = (ins, lSt) => {
     let cur = t2m(departTime);
     for(let i=0;i<n;i++){
-      if(i===ins){
-        const la=Math.max(cur,LUNCH_S);
-        if(la<LUNCH_S||la+lSt>LUNCH_E) return Infinity;
-        cur=la+lSt;
-      }
       const c=middle[i];
+      if(i===ins){
+        // 先に移動してから昼食、その後その場で訪問
+        cur += c.travelMins??0;
+        const la=Math.max(cur,LUNCH_S);
+        if(la+lSt>LUNCH_E) return Infinity;
+        cur=la+lSt;
+        let arr=cur;
+        const end=arr+c.stay;
+        if((arr>=VISIT_S&&arr<VISIT_E)||(arr<VISIT_S&&end>VISIT_S)) arr=VISIT_E;
+        cur=arr+c.stay;
+        continue;
+      }
       let arr=cur+(c.travelMins??0);
       const end=arr+c.stay;
       if((arr>=VISIT_S&&arr<VISIT_E)||(arr<VISIT_S&&end>VISIT_S)) arr=VISIT_E;
@@ -275,7 +283,7 @@ const bestLunchPosition = (middle, retNode, departTime, lunchStay) => {
     }
     if(ins===n){
       const la=Math.max(cur,LUNCH_S);
-      if(la<LUNCH_S||la+lSt>LUNCH_E) return Infinity;
+      if(la+lSt>LUNCH_E) return Infinity;
       cur=la+lSt;
     }
     return cur+(retNode.travelMins??fallbackMins(LUNCH_TMPL,{lat:35.1565,lng:136.9208}));
@@ -1222,10 +1230,13 @@ export default function App() {
 
       const {insertIdx,stay:lSt}=await defer(()=>bestLunchPosition(reversedMiddle,recomputedRet,departTime,DEFAULT_LUNCH_STAY));
 
+      // 「移動してから昼食」: 次ノードのtravelMinsを昼食ノードに移し、次ノードは0に
+      const lunchNextNode=reversedMiddle[insertIdx];
+      const lunchTm=lunchNextNode?(lunchNextNode.travelMins??0):0;
       const withLunch=[
         ...reversedMiddle.slice(0,insertIdx),
-        {...LUNCH_TMPL,stay:lSt,travelMins:0},
-        ...reversedMiddle.slice(insertIdx),
+        {...LUNCH_TMPL,stay:lSt,travelMins:lunchTm},
+        ...reversedMiddle.slice(insertIdx).map((node,j)=>j===0?{...node,travelMins:0}:node),
       ];
       setRouteLocations([withMeta[0],...withLunch,recomputedRet]);
       setUsedFallback(!geoms.some(g=>g&&g.length>2));
