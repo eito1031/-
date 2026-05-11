@@ -5,7 +5,7 @@ import {
   Clock, MapPin, Navigation, Building2, RefreshCw, ArrowUp, ArrowDown,
   Search, CheckCircle2, Circle, ChevronRight, Coffee, UtensilsCrossed,
   Zap, Database, Plus, Pencil, Trash2, Download, Upload, X, Save,
-  AlertTriangle, Check, Route, Loader2, TrendingDown, Settings
+  AlertTriangle, Check, Route, Loader2, Settings
 } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
@@ -133,11 +133,9 @@ const fetchOsrmTable = async (nodes) => {
         : Math.max(1, Math.round((s / 60) * TRAFFIC_BUFFER))
       )
     );
-    // Bug 1 fixed: was saveCache(*cache)
     _cache[key] = mat; saveCache(_cache);
     return mat;
   } catch {
-    // Bug 2 fixed: was nodes.map((*,i)=>...)
     return nodes.map((_,i)=>nodes.map((_2,j)=>i===j?0:fallbackMins(nodes[i],nodes[j])));
   }
 };
@@ -231,7 +229,6 @@ const optimize2opt = (custs, priorityId, durMat) => {
   let route=ord.map(x=>x.idx);
   const fixedStart=priorityId?1:0;
   let improved=true, iter=300;
-  // Bug 3 fixed: was iter–>0 (U+2013 EN DASH instead of --)
   while(improved && iter-- > 0){
     improved=false;
     for(let i=fixedStart;i<route.length-1;i++){
@@ -1108,45 +1105,7 @@ export default function App() {
 
   const officeNode = useMemo(()=>({ ...office, id:"office", type:"office", stay:0 }),[office]);
 
-  // TSPTW-DP: 時刻指定あり・≤9件の完全最適化
-  const tsptw_dp = useCallback((custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime)=>{
-    const n=custs.length;
-    const nodeIdx=new Map(tableNodes.map((nd,i)=>[nd.id,i]));
-    const getT=(a,b)=>{const ai=nodeIdx.get(a.id)??-1,bi=nodeIdx.get(b.id)??-1;return(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(a,b);};
-    const applyArr=(c,arr)=>{
-      if(pinnedTimes[c.id])arr=Math.max(arr,t2m(pinnedTimes[c.id]));
-      const end=arr+c.stay;
-      if((arr>=VISIT_S&&arr<VISIT_E)||(arr<VISIT_S&&end>VISIT_S))arr=VISIT_E;
-      return arr;
-    };
-    const INF=1e9,depart=t2m(departTime);
-    const dp=Array.from({length:1<<n},()=>new Float64Array(n).fill(INF));
-    const prev=Array.from({length:1<<n},()=>new Int8Array(n).fill(-1));
-    const priorIdx=priorityId&&!pinnedTimes[priorityId]?custs.findIndex(c=>c.id===priorityId):-1;
-    const initVisit=(i)=>{const c=custs[i];dp[1<<i][i]=applyArr(c,depart+getT(officeNode,c))+c.stay;};
-    if(priorIdx>=0)initVisit(priorIdx);else for(let i=0;i<n;i++)initVisit(i);
-    for(let mask=1;mask<(1<<n);mask++){
-      for(let i=0;i<n;i++){
-        if(!(mask&(1<<i))||dp[mask][i]>=INF)continue;
-        if(priorIdx>=0&&!(mask&(1<<priorIdx)))continue;
-        for(let j=0;j<n;j++){
-          if(mask&(1<<j))continue;
-          const c=custs[j];
-          const arr=applyArr(c,dp[mask][i]+getT(custs[i],c));
-          const dep=arr+c.stay,nm=mask|(1<<j);
-          if(dep<dp[nm][j]){dp[nm][j]=dep;prev[nm][j]=i;}
-        }
-      }
-    }
-    const full=(1<<n)-1;
-    let best=INF,lastJ=0;
-    for(let j=0;j<n;j++){const ret=dp[full][j]+getT(custs[j],officeNode);if(ret<best){best=ret;lastJ=j;}}
-    const order=[];let mask=full,cur=lastJ;
-    while(mask>0){order.push(custs[cur]);const p=prev[mask][cur];mask^=(1<<cur);cur=p;}
-    order.reverse();return order;
-  },[]);
-
-  // 2フェーズ法: 時刻指定あり・≥10件（貪欲割り当て＋窓内2-opt）
+  // 2フェーズ法: 時刻指定あり（貪欲マイルストーン割り当て＋窓内2-opt）
   const two_phase_route = useCallback((custs,officeNode,durMat,tableNodes,pinnedTimes,priorityId,departTime)=>{
     const nodeIdx=new Map(tableNodes.map((nd,i)=>[nd.id,i]));
     const getT=(a,b)=>{const ai=nodeIdx.get(a.id)??-1,bi=nodeIdx.get(b.id)??-1;return(ai>=0&&bi>=0&&durMat[ai]?.[bi]!=null)?durMat[ai][bi]:fallbackMins(a,b);};
@@ -1194,7 +1153,6 @@ export default function App() {
       const custs = customers.filter(c=>selectedIds.includes(c.id)).map(c=>({...c,type:"customer",stay:c.defaultStay??DEFAULT_STAY}));
       const tableNodes = [officeNode, ...custs];
 
-      // Bug 5 & 6 fixed: removed double-call and unused isFallback variable
       const durMat = await fetchOsrmTable(tableNodes);
 
       // STEP2: ルート最適化（defer でブラウザフリーズ防止）
