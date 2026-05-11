@@ -819,7 +819,8 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
                 {!noC&&<button onClick={()=>onSetPriority(loc.id)} className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${isPri?"bg-emerald-500 text-white":"bg-slate-700 text-slate-400 hover:bg-emerald-600/70 hover:text-white"}`}><Zap size={11}/>優先</button>}
                 {!noC&&isSel&&(
                   editingTimeId===loc.id
-                    ?<input type="time" autoFocus defaultValue={pinTime??""}
+                    ?<input type="time" autoFocus defaultValue={pinTime??""} step="900"
+                        style={{fontSize:'16px'}}
                         className="w-24 bg-slate-800 border border-amber-500 rounded-lg px-1.5 py-1 text-xs text-white focus:outline-none"
                         onChange={e=>onSetPinnedTime(loc.id,e.target.value||null)}
                         onBlur={()=>setEditingTimeId(null)}/>
