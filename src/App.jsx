@@ -776,7 +776,6 @@ const DatabaseView = ({ customers, onUpdate, onToast }) => {
 
 const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPriority, pinnedTimes, onSetPinnedTime, departTime, onDepartChange, onSearch, isOptimizing }) => {
   const [q,setQ]=useState("");
-  const [editingTimeId,setEditingTimeId]=useState(null);
   const filtered=useMemo(()=>customers.filter(c=>matchQuery(c,q)),[customers,q]);
   const noCoordSelected=selected.filter(id=>{ const c=customers.find(x=>x.id===id); return c&&(c.lat==null||c.lng==null); });
   const canSearch=selected.length>0&&noCoordSelected.length===0&&!isOptimizing;
@@ -823,19 +822,12 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
               <div className="flex-shrink-0 flex items-center gap-1">
                 {!noC&&<button onClick={()=>onSetPriority(loc.id)} className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${isPri?"bg-emerald-500 text-white":"bg-slate-700 text-slate-400 hover:bg-emerald-600/70 hover:text-white"}`}><Zap size={11}/>優先</button>}
                 {!noC&&isSel&&(
-                  editingTimeId===loc.id
-                    ?<select autoFocus value={pinTime??""} style={{fontSize:'16px'}}
-                        className="w-24 bg-slate-800 border border-amber-500 rounded-lg px-1.5 py-1 text-xs text-white focus:outline-none"
-                        onChange={e=>{onSetPinnedTime(loc.id,e.target.value||null);setEditingTimeId(null);}}
-                        onBlur={()=>setEditingTimeId(null)}>
-                        <option value="">-- 解除 --</option>
-                        {PINNED_TIME_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
-                      </select>
-                    :<button onClick={()=>setEditingTimeId(loc.id)}
-                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${pinTime?"bg-amber-500 text-white":"bg-slate-700 text-slate-400 hover:bg-amber-600/70 hover:text-white"}`}>
-                        <Clock size={11}/>{pinTime??"時刻"}
-                        {pinTime&&<span className="ml-0.5 opacity-70 hover:opacity-100" onClick={e=>{e.stopPropagation();onSetPinnedTime(loc.id,null);}}>×</span>}
-                      </button>
+                  <select value={pinTime??""} style={{fontSize:'16px'}}
+                      className={`w-20 rounded-lg px-1.5 py-1.5 text-xs font-bold border focus:outline-none ${pinTime?"bg-amber-500 border-amber-400 text-white":"bg-slate-700 border-slate-600 text-slate-400"}`}
+                      onChange={e=>onSetPinnedTime(loc.id,e.target.value||null)}>
+                    <option value="">時刻</option>
+                    {PINNED_TIME_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
+                  </select>
                 )}
               </div>
             </div>
@@ -1274,7 +1266,7 @@ export default function App() {
   },[]);
 
   const handleBack  = useCallback(()=>setStep("select"),[]);
-  const handleReset = useCallback(()=>{setStep("select");setSelectedIds([]);setPriorityId(null);setDepartTime(DEFAULT_DEPART);setRouteLocations([]);},[]);
+  const handleReset = useCallback(()=>{setStep("select");setSelectedIds([]);setPriorityId(null);setPinnedTimes({});setDepartTime(DEFAULT_DEPART);setRouteLocations([]);},[]);
 
   const schedule=useMemo(()=>step==="result"?calcSchedule(routeLocations,departTime):[],[routeLocations,departTime,step]);
 
