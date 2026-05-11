@@ -56,6 +56,9 @@ const TRAFFIC_BUFFER = 1.5;
 const DEPART_OPTIONS = (() => {
   const o=[]; for(let m=t2m("09:00");m<=t2m("16:00");m+=15) o.push(m2t(m)); return o;
 })();
+const PINNED_TIME_OPTIONS = (() => {
+  const o=[]; for(let m=t2m("07:00");m<=t2m("20:00");m+=15) o.push(m2t(m)); return o;
+})();
 
 // ─── デフォルトオフィス（〒460-0012 愛知県名古屋市中区千代田５丁目１９－５）───
 const DEFAULT_OFFICE = {
@@ -821,11 +824,13 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
                 {!noC&&<button onClick={()=>onSetPriority(loc.id)} className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${isPri?"bg-emerald-500 text-white":"bg-slate-700 text-slate-400 hover:bg-emerald-600/70 hover:text-white"}`}><Zap size={11}/>優先</button>}
                 {!noC&&isSel&&(
                   editingTimeId===loc.id
-                    ?<input type="time" autoFocus defaultValue={pinTime??""} step="900"
-                        style={{fontSize:'16px'}}
+                    ?<select autoFocus value={pinTime??""} style={{fontSize:'16px'}}
                         className="w-24 bg-slate-800 border border-amber-500 rounded-lg px-1.5 py-1 text-xs text-white focus:outline-none"
-                        onChange={e=>onSetPinnedTime(loc.id,e.target.value||null)}
-                        onBlur={()=>setEditingTimeId(null)}/>
+                        onChange={e=>{onSetPinnedTime(loc.id,e.target.value||null);setEditingTimeId(null);}}
+                        onBlur={()=>setEditingTimeId(null)}>
+                        <option value="">-- 解除 --</option>
+                        {PINNED_TIME_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
+                      </select>
                     :<button onClick={()=>setEditingTimeId(loc.id)}
                         className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 ${pinTime?"bg-amber-500 text-white":"bg-slate-700 text-slate-400 hover:bg-amber-600/70 hover:text-white"}`}>
                         <Clock size={11}/>{pinTime??"時刻"}
