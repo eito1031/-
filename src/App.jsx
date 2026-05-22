@@ -80,7 +80,17 @@ const ls = {
   del: (k)   => { try { localStorage.removeItem(k); } catch{} },
 };
 
-const loadMaster  = () => { const d=ls.get(LS_KEY_MASTER,null); return (d&&d.length>0)?d:SAMPLE_CUSTOMERS; };
+const loadMaster  = () => {
+  const d=ls.get(LS_KEY_MASTER,null);
+  if(!d||d.length===0) return SAMPLE_CUSTOMERS;
+  // 旧デフォルト20分→10分への一括マイグレーション
+  if(d.some(c=>c.defaultStay===20)){
+    const migrated=d.map(c=>c.defaultStay===20?{...c,defaultStay:10}:c);
+    saveMaster(migrated);
+    return migrated;
+  }
+  return d;
+};
 const saveMaster  = (d) => ls.set(LS_KEY_MASTER, d);
 const loadCache   = () => ls.get(LS_KEY_CACHE, {});
 const saveCache   = (c) => ls.set(LS_KEY_CACHE, c);
