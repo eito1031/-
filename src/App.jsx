@@ -36,7 +36,7 @@ const defer = (fn) => new Promise(res => setTimeout(() => res(fn()), 0));
 
 // ─── 定数 ───
 const DEFAULT_DEPART     = "10:30";
-const DEFAULT_STAY       = 20;
+const DEFAULT_STAY       = 10;
 const DEFAULT_LUNCH_STAY = 40;
 const LS_KEY_MASTER      = "routeopt_master";
 const LS_KEY_CACHE       = "routeopt_dist_cache";
@@ -586,7 +586,7 @@ const OfficeSettingsModal = ({ office, onSave, onClose }) => {
 // SECTION 11: CUSTOMER FORM MODAL
 // ═══════════════════════════════════════════════════════════════
 
-const emptyForm=()=>({id:"",name:"",kana:"",address:"",area:"",defaultStay:20,lat:null,lng:null});
+const emptyForm=()=>({id:"",name:"",kana:"",address:"",area:"",defaultStay:10,lat:null,lng:null});
 
 const CustomerFormModal = ({ initial, onSave, onClose }) => {
   const [form,setForm]=useState(()=>initial?{...emptyForm(),...initial,lat:initial.lat??null,lng:initial.lng??null}:emptyForm());
@@ -608,7 +608,7 @@ const CustomerFormModal = ({ initial, onSave, onClose }) => {
     if(!form.address.trim()){alert("住所は必須です");return;}
     if(form.lat==null||form.lng==null){alert("座標を取得または地図でピンを設置してください");return;}
     if(initial&&(initial.lat!==form.lat||initial.lng!==form.lng)){purgeCacheFor(form.id);}
-    onSave({...form,id:form.id||`cust_${Date.now()}`,defaultStay:parseInt(form.defaultStay)||20});
+    onSave({...form,id:form.id||`cust_${Date.now()}`,defaultStay:parseInt(form.defaultStay)||10});
   };
 
   return (
