@@ -2,7 +2,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef, Fragment } from "react";
 import CUSTOMERS from "./customers.js";
 import {
-  Clock, MapPin, Navigation, Building2, RefreshCw, ArrowUp, ArrowDown,
+  Clock, MapPin, Navigation, Building2, RefreshCw, GripVertical, ArrowDownUp,
   Search, CheckCircle2, Circle, ChevronRight, Coffee, UtensilsCrossed,
   Zap, Database, Plus, Pencil, Trash2, Download, Upload, X, Save,
   AlertTriangle, Check, Route, Loader2, Settings
@@ -861,7 +861,7 @@ const LocationSelector = ({ customers, selected, onToggle, priorityId, onSetPrio
 // SECTION 14: SCHEDULE ROW (STEP 2)
 // ═══════════════════════════════════════════════════════════════
 
-const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, canDown, isPriority, isPinned, custLabel }) => {
+const ScheduleRow = ({ entry, index, onStayChange, isPriority, isPinned, custLabel }) => {
   const isOffice=entry.type==="office", isReturn=entry.type==="office_return", isOfficeAny=isOffice||isReturn;
   const isLunch=entry.type==="lunch";
   const isLunchAdj=entry.type==="customer"&&entry.arrivalMins===VISIT_E;
@@ -903,10 +903,6 @@ const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, 
             <button onClick={()=>onStayChange(index,10)} className="w-6 h-6 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-bold flex items-center justify-center text-sm">＋</button>
           </div>}
         </div>
-        {!isOfficeAny&&<div className="flex flex-col gap-1">
-          <button onClick={()=>onMoveUp(index)} disabled={!canUp} className="w-6 h-6 rounded-lg bg-slate-700 hover:bg-indigo-600 disabled:opacity-20 disabled:cursor-not-allowed text-white flex items-center justify-center"><ArrowUp size={12}/></button>
-          <button onClick={()=>onMoveDown(index)} disabled={!canDown} className="w-6 h-6 rounded-lg bg-slate-700 hover:bg-indigo-600 disabled:opacity-20 disabled:cursor-not-allowed text-white flex items-center justify-center"><ArrowDown size={12}/></button>
-        </div>}
       </div>
     </div>
   );
@@ -916,7 +912,7 @@ const ScheduleRow = ({ entry, index, onStayChange, onMoveUp, onMoveDown, canUp, 
 // SECTION 15: ROUTE RESULT (STEP 2)
 // ═══════════════════════════════════════════════════════════════
 
-const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove, onBack }) => {
+const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onReverse, onReorderOpen, onBack, isOptimizing }) => {
   const custN=schedule.filter(e=>e.type==="customer").length;
   const total=schedule.reduce((s,e)=>s+(e.type!=="lunch"?(e.travelMins||0):0),0);
   const retEnt=schedule.find(e=>e.type==="office_return");
@@ -948,11 +944,21 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
       <div>
         <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
           <Coffee size={10} className="text-amber-400"/>訪問スケジュール
-          <div className="ml-auto flex items-center gap-2 text-[9px] font-normal normal-case tracking-normal">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-emerald-500 bg-emerald-950/40 inline-block"/>優先</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-amber-500 bg-amber-950/40 inline-block"/>昼食</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-orange-500 bg-orange-950/30 inline-block"/>時間ずれ</span>
+          <div className="ml-auto flex items-center gap-1.5">
+            <button onClick={onReverse} disabled={isOptimizing}
+              className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 disabled:opacity-40 transition-colors normal-case tracking-normal">
+              <ArrowDownUp size={10}/>逆順
+            </button>
+            <button onClick={onReorderOpen} disabled={isOptimizing}
+              className="flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-indigo-700 hover:bg-indigo-600 text-white disabled:opacity-40 transition-colors normal-case tracking-normal">
+              <GripVertical size={10}/>並び替え
+            </button>
           </div>
+        </div>
+        <div className="flex items-center gap-2 mb-2.5 text-[9px] font-normal text-slate-500">
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-emerald-500 bg-emerald-950/40 inline-block"/>優先</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-amber-500 bg-amber-950/40 inline-block"/>昼食</span>
+          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-orange-500 bg-orange-950/30 inline-block"/>時間ずれ</span>
         </div>
         <div className="flex flex-col">
           {schedule.map((entry,i)=>{
@@ -971,8 +977,6 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
                   isPinned={entry.type==="customer"&&!!entry.pinnedTime}
                   custLabel={custLabels[i]}
                   onStayChange={onStayChange}
-                  onMoveUp={(idx)=>onMove(idx,-1)} onMoveDown={(idx)=>onMove(idx,1)}
-                  canUp={i>1&&!(entry.type==="lunch"&&i===2)&&!(i===last-1&&schedule[i-1]?.type==="lunch")} canDown={i<last-1&&!(entry.type==="lunch"&&i===last-2)&&!(i===1&&schedule[i+1]?.type==="lunch")}
                 />
               </Fragment>
             );
@@ -986,7 +990,103 @@ const RouteResult = ({ schedule, priorityId, usedFallback, onStayChange, onMove,
 };
 
 // ═══════════════════════════════════════════════════════════════
-// SECTION 16: PWA INSTALL PROMPT
+// SECTION 16: REORDER SHEET
+// ═══════════════════════════════════════════════════════════════
+
+const ReorderSheet = ({ items, onApply, onClose }) => {
+  const [order, setOrder] = useState(items);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dropIdx, setDropIdx] = useState(null);
+  const dragIdxRef = useRef(null);
+  const dropIdxRef = useRef(null);
+  const itemEls = useRef([]);
+  const LABELS = ["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩"];
+
+  const findIdxAtY = (y) => {
+    for(let i = 0; i < itemEls.current.length; i++) {
+      const el = itemEls.current[i]; if(!el) continue;
+      const r = el.getBoundingClientRect();
+      if(y >= r.top && y <= r.bottom) return i;
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if(dragIdxRef.current === null) return;
+      if(e.cancelable) e.preventDefault();
+      const y = e.touches?.[0]?.clientY ?? e.clientY;
+      const over = findIdxAtY(y);
+      if(over !== null && over !== dropIdxRef.current) { dropIdxRef.current=over; setDropIdx(over); }
+    };
+    const onEnd = () => {
+      const from = dragIdxRef.current, to = dropIdxRef.current;
+      dragIdxRef.current = null; dropIdxRef.current = null;
+      setDragIdx(null); setDropIdx(null);
+      if(from !== null && to !== null && from !== to) {
+        setOrder(prev => { const n=[...prev]; const [it]=n.splice(from,1); n.splice(to,0,it); return n; });
+      }
+    };
+    window.addEventListener('touchmove', onMove, {passive:false});
+    window.addEventListener('touchend', onEnd);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+    return () => {
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onEnd);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onEnd);
+    };
+  }, []);
+
+  const onHandleStart = (e, idx) => {
+    e.preventDefault();
+    dragIdxRef.current = idx; dropIdxRef.current = idx;
+    setDragIdx(idx); setDropIdx(idx);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col" style={{paddingTop:"env(safe-area-inset-top)"}}>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+        <h2 className="text-sm font-bold text-white flex items-center gap-2"><GripVertical size={14} className="text-indigo-400"/>訪問順の変更</h2>
+        <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X size={18}/></button>
+      </div>
+      <p className="text-[11px] text-slate-500 px-4 pt-2 pb-1">≡ をドラッグして並び替え</p>
+      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2 select-none">
+        {order.map((item, i) => (
+          <div key={item.id} ref={el => itemEls.current[i]=el}
+            className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+              dragIdx===i ? "opacity-40 border-indigo-500 bg-indigo-950/30" :
+              dropIdx===i && dragIdx!==null ? "border-indigo-400 bg-indigo-900/30" :
+              "border-slate-700/50 bg-slate-800/50"
+            }`}>
+            <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-slate-400 cursor-grab active:cursor-grabbing"
+              onMouseDown={e => onHandleStart(e, i)} onTouchStart={e => onHandleStart(e, i)}>
+              <GripVertical size={18}/>
+            </div>
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 ${item.pinnedTime?"bg-amber-600":"bg-indigo-600"}`}>
+              {LABELS[i] ?? String(i+1)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-slate-100 truncate">{item.name}</div>
+              {item.area&&<div className="text-[10px] text-slate-500">{item.area}</div>}
+            </div>
+            {item.pinnedTime&&<span className="text-[10px] text-amber-400 font-bold bg-amber-900/30 border border-amber-700/40 px-1.5 py-0.5 rounded-lg">{item.pinnedTime}</span>}
+          </div>
+        ))}
+      </div>
+      <div className="px-4 py-3 border-t border-slate-800 flex gap-2" style={{paddingBottom:"max(12px,env(safe-area-inset-bottom))"}}>
+        <button onClick={onClose} className="flex-1 py-3 rounded-2xl border border-slate-600 text-slate-400 hover:text-white text-sm font-semibold transition-colors">キャンセル</button>
+        <button onClick={()=>onApply(order)} className="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-1.5">
+          <Check size={13}/>完了・最適化
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SECTION 17: PWA INSTALL PROMPT
 // ═══════════════════════════════════════════════════════════════
 
 const InstallPrompt = () => {
@@ -1086,6 +1186,9 @@ export default function App() {
   const [isOptimizing,setIsOptimizing]     = useState(false);
   const [usedFallback,setUsedFallback]     = useState(false);
   const [showOfficeSetting,setShowOfficeSetting] = useState(false);
+  const [showReorder,setShowReorder]       = useState(false);
+  const durMatRef    = useRef(null);
+  const tableNodesRef = useRef(null);
 
   const [customers,setCustomers] = useState(()=>[...loadMaster()].sort((a,b)=>(a.kana||a.name).localeCompare(b.kana||b.name,"ja")));
   const [office,setOffice]       = useState(loadOffice);
@@ -1173,6 +1276,8 @@ export default function App() {
       const tableNodes = [officeNode, ...custs];
 
       const durMat = await fetchOsrmTable(tableNodes);
+      durMatRef.current = durMat;
+      tableNodesRef.current = tableNodes;
 
       // STEP2: ルート最適化（defer でブラウザフリーズ防止）
       const hasPinned=custs.some(c=>pinnedTimes[c.id]);
@@ -1232,24 +1337,47 @@ export default function App() {
     setRouteLocations(p=>p.map((l,i)=>i===idx?{...l,stay:Math.max(0,l.stay+delta)}:l));
   },[]);
 
-  const handleMove=useCallback((idx,dir)=>{
-    setRouteLocations(p=>{
-      const n=[...p],t=idx+dir;
-      if(t<1||t>=n.length-1) return p;
-      [n[idx],n[t]]=[n[t],n[idx]];
-      const li=n.findIndex(x=>x.type==="lunch");
-      if(li>=0&&(li===1||li===n.length-2)){[n[idx],n[t]]=[n[t],n[idx]];return p;}
-      const lo=Math.min(idx,t);
-      [idx,t,lo+1].forEach(j=>{
-        if(j>0&&j<n.length){
-          if(n[j].type==="lunch") n[j]={...n[j],travelMins:0};
-          else if(j===lo+1&&n[lo]?.type==="lunch"){/* 昼食直後: lat/lng なし → stale OSRM値を保持 */}
-          else n[j]={...n[j],travelMins:undefined};
-        }
+  // 任意の顧客順序で昼食を再最適化してルートを再構築
+  const applyCustomerOrder = useCallback(async (orderedCusts) => {
+    setIsOptimizing(true);
+    try {
+      const durMat = durMatRef.current;
+      const tableNodes = tableNodesRef.current;
+      const tableIdx = (durMat&&tableNodes) ? new Map(tableNodes.map((n,i)=>[n.id,i])) : null;
+      const retNode = {...officeNode,id:"office_return",type:"office_return"};
+      const fullNodes = [officeNode,...orderedCusts,retNode];
+      const withMeta = fullNodes.map((node,i)=>{
+        if(i===0) return node;
+        const pn=fullNodes[i-1];
+        let tm=fallbackMins(pn,node);
+        if(tableIdx){const pi=tableIdx.get(pn.id)??-1,ci=tableIdx.get(node.id)??-1;if(pi>=0&&ci>=0&&durMat[pi]?.[ci]!=null)tm=durMat[pi][ci];}
+        return {...node,travelMins:tm,osrmGeom:null,pinnedTime:pinnedTimes[node.id]??null};
       });
-      return n;
-    });
-  },[]);
+      const middle=withMeta.slice(1,withMeta.length-1);
+      const retMeta=withMeta[withMeta.length-1];
+      const {insertIdx,stay:lSt}=await defer(()=>bestLunchPosition(middle,retMeta,departTime,DEFAULT_LUNCH_STAY));
+      const lunchNextNode=middle[insertIdx];
+      const lunchTm=lunchNextNode?(lunchNextNode.travelMins??0):0;
+      const withLunch=[
+        ...middle.slice(0,insertIdx),
+        {...LUNCH_TMPL,stay:lSt,travelMins:lunchTm},
+        ...middle.slice(insertIdx).map((node,j)=>j===0?{...node,travelMins:0}:node),
+      ];
+      setRouteLocations([withMeta[0],...withLunch,retMeta]);
+    } finally {
+      setIsOptimizing(false);
+    }
+  },[officeNode,pinnedTimes,departTime]);
+
+  const handleReverse = useCallback(async ()=>{
+    const custs=routeLocations.filter(l=>l.type==="customer");
+    await applyCustomerOrder([...custs].reverse());
+  },[routeLocations,applyCustomerOrder]);
+
+  const handleReorder = useCallback(async (newOrder)=>{
+    setShowReorder(false);
+    await applyCustomerOrder(newOrder);
+  },[applyCustomerOrder]);
 
   const handleBack  = useCallback(()=>setStep("select"),[]);
   const handleReset = useCallback(()=>{setStep("select");setSelectedIds([]);setPriorityId(null);setPinnedTimes({});setDepartTime(DEFAULT_DEPART);setRouteLocations([]);},[]);
@@ -1302,12 +1430,13 @@ export default function App() {
         {tab==="route"
           ?(step==="select"
             ?<LocationSelector customers={customers} selected={selectedIds} onToggle={handleToggle} priorityId={priorityId} onSetPriority={handleSetPriority} pinnedTimes={pinnedTimes} onSetPinnedTime={handleSetPinnedTime} departTime={departTime} onDepartChange={setDepartTime} onSearch={handleSearch} isOptimizing={isOptimizing}/>
-            :<RouteResult schedule={schedule} priorityId={priorityId} usedFallback={usedFallback} onStayChange={handleStayChange} onMove={handleMove} onBack={handleBack}/>
+            :<RouteResult schedule={schedule} priorityId={priorityId} usedFallback={usedFallback} onStayChange={handleStayChange} onReverse={handleReverse} onReorderOpen={()=>setShowReorder(true)} onBack={handleBack} isOptimizing={isOptimizing}/>
           )
           :<DatabaseView customers={customers} onUpdate={d=>setCustomers([...d].sort((a,b)=>(a.kana||a.name).localeCompare(b.kana||b.name,"ja")))} onToast={showToast}/>
         }
       </div>
       {showOfficeSetting&&<OfficeSettingsModal office={office} onSave={o=>{setOffice(o);setShowOfficeSetting(false);showToast("オフィス設定を保存しました");}} onClose={()=>setShowOfficeSetting(false)}/>}
+      {showReorder&&<ReorderSheet items={routeLocations.filter(l=>l.type==="customer")} onApply={handleReorder} onClose={()=>setShowReorder(false)}/>}
       {toast&&<Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)}/>}
       <InstallPrompt/>
     </div>
